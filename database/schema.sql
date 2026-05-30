@@ -1,8 +1,9 @@
 -- UV3 PLATFORM - COMPLETE DATABASE SCHEMA
 -- Handles sports league management and neighborhood community portal data
 
--- Enable uuid-ossp if not already enabled (Supabase has this by default, but good practice)
+-- Enable UUID helpers used by the schema.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =========================================================================
 -- 1. BASE TABLES
@@ -207,15 +208,25 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply timestamp triggers
+DROP TRIGGER IF EXISTS update_users_timestamp ON public.users;
 CREATE TRIGGER update_users_timestamp BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_venues_timestamp ON public.venues;
 CREATE TRIGGER update_venues_timestamp BEFORE UPDATE ON public.venues FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_teams_timestamp ON public.teams;
 CREATE TRIGGER update_teams_timestamp BEFORE UPDATE ON public.teams FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_players_timestamp ON public.players;
 CREATE TRIGGER update_players_timestamp BEFORE UPDATE ON public.players FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_tournaments_timestamp ON public.tournaments;
 CREATE TRIGGER update_tournaments_timestamp BEFORE UPDATE ON public.tournaments FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_matches_timestamp ON public.matches;
 CREATE TRIGGER update_matches_timestamp BEFORE UPDATE ON public.matches FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_standings_timestamp ON public.standings;
 CREATE TRIGGER update_standings_timestamp BEFORE UPDATE ON public.standings FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_schedules_timestamp ON public.schedules;
 CREATE TRIGGER update_schedules_timestamp BEFORE UPDATE ON public.schedules FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_announcements_timestamp ON public.announcements;
 CREATE TRIGGER update_announcements_timestamp BEFORE UPDATE ON public.announcements FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+DROP TRIGGER IF EXISTS update_galleries_timestamp ON public.galleries;
 CREATE TRIGGER update_galleries_timestamp BEFORE UPDATE ON public.galleries FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
 
 -- Supabase auth.users to public.users synchronization trigger
@@ -234,7 +245,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
@@ -381,6 +393,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger standings recalculation on match updates
+DROP TRIGGER IF EXISTS trigger_recalculate_standings ON public.matches;
 CREATE TRIGGER trigger_recalculate_standings
     AFTER INSERT OR UPDATE OR DELETE ON public.matches
     FOR EACH ROW EXECUTE FUNCTION public.recalculate_tournament_standings();
