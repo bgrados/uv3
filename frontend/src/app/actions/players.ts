@@ -5,10 +5,14 @@ import { createClient } from '@/utils/supabase/server';
 import { playerSchema } from './schemas';
 import type { ActionResponse, Player } from '@/types';
 
+const NO_SUPABASE = { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' } as const;
+
 export async function getPlayersByTeamAction(
   teamId: string
 ): Promise<ActionResponse<Player[]>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('players')
     .select('*')
@@ -21,6 +25,8 @@ export async function getPlayersByTeamAction(
 
 export async function getPlayerByIdAction(id: string): Promise<ActionResponse<Player>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('players')
     .select('*, team:teams(id, name, logo_url)')
@@ -33,6 +39,7 @@ export async function getPlayerByIdAction(id: string): Promise<ActionResponse<Pl
 
 export async function createPlayerAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const raw = {
     first_name: formData.get('first_name') as string,
@@ -69,6 +76,7 @@ export async function updatePlayerAction(
   formData: FormData
 ): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const raw = {
     first_name: formData.get('first_name') as string,
@@ -99,6 +107,7 @@ export async function updatePlayerAction(
 
 export async function deletePlayerAction(id: string, teamId: string): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const { error } = await supabase.from('players').delete().eq('id', id);
 
@@ -112,6 +121,8 @@ export async function uploadPlayerPhotoAction(
   formData: FormData
 ): Promise<ActionResponse<string>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const file = formData.get('file') as File;
 
   if (!file) return { success: false, error: 'No se proporcionó un archivo.' };

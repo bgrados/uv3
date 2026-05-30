@@ -7,6 +7,7 @@ import type { ActionResponse } from '@/types';
 
 export async function loginAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -27,6 +28,7 @@ export async function loginAction(formData: FormData): Promise<ActionResponse> {
 
 export async function signupAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -62,13 +64,16 @@ export async function signupAction(formData: FormData): Promise<ActionResponse> 
 
 export async function signoutAction(): Promise<void> {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
   revalidatePath('/', 'layout');
   redirect('/login');
 }
 
 export async function forgotPasswordAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
 
   const email = formData.get('email') as string;
 
@@ -89,6 +94,7 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
 
 export async function resetPasswordAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
 
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirm_password') as string;
@@ -117,6 +123,8 @@ export async function resetPasswordAction(formData: FormData): Promise<ActionRes
 
 export async function getCurrentUser() {
   const supabase = await createClient();
+  if (!supabase) return null;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

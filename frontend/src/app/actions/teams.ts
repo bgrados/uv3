@@ -5,8 +5,12 @@ import { createClient } from '@/utils/supabase/server';
 import { teamSchema } from './schemas';
 import type { ActionResponse, Team } from '@/types';
 
+const NO_SUPABASE = { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' } as const;
+
 export async function getTeamsAction(): Promise<ActionResponse<Team[]>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('teams')
     .select('*, delegate:users!delegate_id(id, full_name, email, username)')
@@ -18,6 +22,8 @@ export async function getTeamsAction(): Promise<ActionResponse<Team[]>> {
 
 export async function getTeamByIdAction(id: string): Promise<ActionResponse<Team>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('teams')
     .select(
@@ -32,8 +38,8 @@ export async function getTeamByIdAction(id: string): Promise<ActionResponse<Team
 
 export async function createTeamAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
-  // Check permissions
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'No autenticado.' };
 
@@ -70,6 +76,7 @@ export async function createTeamAction(formData: FormData): Promise<ActionRespon
 
 export async function updateTeamAction(id: string, formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const raw = {
     name: formData.get('name') as string,
@@ -96,6 +103,7 @@ export async function updateTeamAction(id: string, formData: FormData): Promise<
 
 export async function deleteTeamAction(id: string): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'No autenticado.' };
@@ -120,6 +128,8 @@ export async function deleteTeamAction(id: string): Promise<ActionResponse> {
 
 export async function uploadTeamLogoAction(formData: FormData): Promise<ActionResponse<string>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const file = formData.get('file') as File;
 
   if (!file) return { success: false, error: 'No se proporcionó un archivo.' };

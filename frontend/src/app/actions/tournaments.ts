@@ -5,8 +5,12 @@ import { createClient } from '@/utils/supabase/server';
 import { tournamentSchema } from './schemas';
 import type { ActionResponse, Tournament, Standing } from '@/types';
 
+const NO_SUPABASE = { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' } as const;
+
 export async function getTournamentsAction(): Promise<ActionResponse<Tournament[]>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('tournaments')
     .select('*')
@@ -20,6 +24,8 @@ export async function getTournamentByIdAction(
   id: string
 ): Promise<ActionResponse<Tournament>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('tournaments')
     .select('*')
@@ -34,6 +40,7 @@ export async function createTournamentAction(
   formData: FormData
 ): Promise<ActionResponse<{ id: string }>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'No autenticado.' };
@@ -79,6 +86,7 @@ export async function updateTournamentAction(
   formData: FormData
 ): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const raw = {
     name: formData.get('name') as string,
@@ -112,6 +120,7 @@ export async function updateTournamentAction(
 
 export async function deleteTournamentAction(id: string): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'No autenticado.' };
@@ -139,8 +148,8 @@ export async function registerTeamInTournamentAction(
   teamId: string
 ): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
-  // Check if already registered
   const { data: existing } = await supabase
     .from('standings')
     .select('id')
@@ -165,6 +174,8 @@ export async function getStandingsAction(
   tournamentId: string
 ): Promise<ActionResponse<Standing[]>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('standings')
     .select('*, team:teams(id, name, logo_url)')
@@ -181,6 +192,8 @@ export async function uploadTournamentBannerAction(
   formData: FormData
 ): Promise<ActionResponse<string>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const file = formData.get('file') as File;
 
   if (!file) return { success: false, error: 'No se proporcionó un archivo.' };

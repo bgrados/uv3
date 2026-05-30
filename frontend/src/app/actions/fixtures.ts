@@ -10,10 +10,13 @@ import {
 } from '@/utils/fixtures';
 import type { ActionResponse, Match } from '@/types';
 
+const NO_SUPABASE = { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' } as const;
+
 export async function generateTournamentFixtureAction(
   tournamentId: string
 ): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   // Permission check
   const { data: { user } } = await supabase.auth.getUser();
@@ -109,6 +112,8 @@ export async function getMatchesByTournamentAction(
   tournamentId: string
 ): Promise<ActionResponse<Match[]>> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
   const { data, error } = await supabase
     .from('matches')
     .select(
@@ -130,6 +135,7 @@ export async function updateMatchScoreAction(
   formData: FormData
 ): Promise<ActionResponse> {
   const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
 
   const raw = {
     match_id: formData.get('match_id') as string,
