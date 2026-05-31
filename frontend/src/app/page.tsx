@@ -107,9 +107,35 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
-      </section>
+</section>
 
-      {/* Footer */}
+{/* Gallery Section */}
+<section className="bg-gray-50 py-12">
+  <div className="max-w-7xl mx-auto px-6">
+    <h2 className="text-3xl font-semibold mb-6 text-uv3-green-dark">Galería</h2>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <img src="https://picsum.photos/id/1015/400/300.webp" alt="Imagen 1" className="w-full rounded-md" />
+      <img src="https://picsum.photos/id/1016/400/300.webp" alt="Imagen 2" className="w-full rounded-md" />
+      <img src="https://picsum.photos/id/1018/400/300.webp" alt="Imagen 3" className="w-full rounded-md" />
+    </div>
+  </div>
+</section>
+
+{/* Historia Section */}
+<section className="py-12 px-6 max-w-7xl mx-auto">
+  <h2 className="text-3xl font-semibold mb-4 text-uv3-green-dark">Historia de la Unidad Vecinal 3</h2>
+  <p className="text-gray-700 leading-relaxed mb-4">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin auctor, nisl non rhoncus vehicula, justo
+    euismod urna, et convallis justo magna sit amet turpis. Duis euismod, enim non eleifend consequat,
+    metus magna volutpat urna, vel tempor massa risus at elit.
+  </p>
+  <p className="text-gray-700 leading-relaxed">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dignissim, metus in tristique viverra,
+    turpis interdum pretium, at faucibus dolor leo sit amet erat. Phasellus consectetur mauris nec odio
+    posuere varius. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+  </p>
+</section>
+{/* Footer */}
       <footer className="bg-uv3-green-dark text-white/70 text-center py-8 text-sm">
         <p>© 2026 Unidad Vecinal 3 — Plataforma Comunitaria y Deportiva</p>
       </footer>
