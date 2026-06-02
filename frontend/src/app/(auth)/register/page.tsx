@@ -20,22 +20,14 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h2 className="font-heading text-2xl font-bold text-center text-gray-900 mb-2">
-        Crear Cuenta
-      </h2>
-      <p className="text-center text-muted text-sm mb-6">
-        Únete a la comunidad UV3
-      </p>
+      <h2 className="mb-2 text-center font-heading text-2xl font-bold text-gray-900">Crear cuenta</h2>
+      <p className="mb-6 text-center text-sm text-muted">Únete a la comunidad UV3</p>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-destructive text-sm rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-destructive">{error}</div>}
 
       <form action={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="full_name" className="mb-1 block text-sm font-medium text-gray-700">
             Nombre completo
           </label>
           <input
@@ -43,13 +35,13 @@ export default function RegisterPage() {
             name="full_name"
             type="text"
             required
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="Juan Pérez"
           />
         </div>
 
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="username" className="mb-1 block text-sm font-medium text-gray-700">
             Nombre de usuario
           </label>
           <input
@@ -57,13 +49,13 @@ export default function RegisterPage() {
             name="username"
             type="text"
             required
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="juanperez"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
             Correo electrónico
           </label>
           <input
@@ -71,13 +63,13 @@ export default function RegisterPage() {
             name="email"
             type="email"
             required
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="tu@correo.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
             Contraseña
           </label>
           <input
@@ -86,7 +78,7 @@ export default function RegisterPage() {
             type="password"
             required
             minLength={6}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="Mínimo 6 caracteres"
           />
         </div>
@@ -94,15 +86,15 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-uv3-green text-white font-semibold rounded-lg hover:bg-uv3-green-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-uv3-green py-2.5 font-semibold text-white transition-colors hover:bg-uv3-green-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? 'Registrando...' : 'Crear Cuenta'}
+          {loading ? 'Registrando...' : 'Crear cuenta'}
         </button>
       </form>
 
-      <p className="text-center text-sm text-muted mt-6">
+      <p className="mt-6 text-center text-sm text-muted">
         ¿Ya tienes cuenta?{' '}
-        <Link href="/login" className="text-uv3-green font-medium hover:text-uv3-green-dark">
+        <Link href="/login" className="font-medium text-uv3-green transition-colors hover:text-uv3-green-dark">
           Inicia sesión
         </Link>
       </p>

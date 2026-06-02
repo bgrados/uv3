@@ -1,14 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import type { UV3SupabaseClient } from './types';
 
-export async function createClient() {
+export async function createClient(): Promise<UV3SupabaseClient> {
   const cookieStore = await cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return null;
+    throw new Error('Missing Supabase environment variables.');
   }
 
   return createServerClient(
@@ -31,5 +32,5 @@ export async function createClient() {
         },
       },
     }
-  );
+  ) as unknown as UV3SupabaseClient;
 }

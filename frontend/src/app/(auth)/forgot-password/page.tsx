@@ -24,16 +24,14 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="text-center">
-        <div className="w-16 h-16 bg-uv3-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-uv3-green text-3xl">✉</span>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-uv3-green/10">
+          <span className="text-3xl text-uv3-green">✉</span>
         </div>
-        <h2 className="font-heading text-2xl font-bold text-gray-900 mb-2">
-          Revisa tu correo
-        </h2>
-        <p className="text-muted text-sm mb-6">
+        <h2 className="mb-2 font-heading text-2xl font-bold text-gray-900">Revisa tu correo</h2>
+        <p className="mb-6 text-sm text-muted">
           Te hemos enviado un enlace para restablecer tu contraseña.
         </p>
-        <Link href="/login" className="text-uv3-green font-medium hover:text-uv3-green-dark">
+        <Link href="/login" className="font-medium text-uv3-green transition-colors hover:text-uv3-green-dark">
           Volver al inicio de sesión
         </Link>
       </div>
@@ -42,22 +40,18 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <h2 className="font-heading text-2xl font-bold text-center text-gray-900 mb-2">
-        Recuperar Contraseña
+      <h2 className="mb-2 text-center font-heading text-2xl font-bold text-gray-900">
+        Recuperar contraseña
       </h2>
-      <p className="text-center text-muted text-sm mb-6">
+      <p className="mb-6 text-center text-sm text-muted">
         Ingresa tu correo y te enviaremos un enlace de recuperación
       </p>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-destructive text-sm rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-destructive">{error}</div>}
 
       <form action={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
             Correo electrónico
           </label>
           <input
@@ -65,7 +59,7 @@ export default function ForgotPasswordPage() {
             name="email"
             type="email"
             required
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="tu@correo.com"
           />
         </div>
@@ -73,14 +67,14 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-uv3-green text-white font-semibold rounded-lg hover:bg-uv3-green-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-uv3-green py-2.5 font-semibold text-white transition-colors hover:bg-uv3-green-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? 'Enviando...' : 'Enviar enlace'}
         </button>
       </form>
 
-      <p className="text-center text-sm text-muted mt-6">
-        <Link href="/login" className="text-uv3-green font-medium hover:text-uv3-green-dark">
+      <p className="mt-6 text-center text-sm text-muted">
+        <Link href="/login" className="font-medium text-uv3-green transition-colors hover:text-uv3-green-dark">
           Volver al inicio de sesión
         </Link>
       </p>

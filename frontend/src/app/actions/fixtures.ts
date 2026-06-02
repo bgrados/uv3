@@ -51,7 +51,7 @@ export async function generateTournamentFixtureAction(
 
   if (sError) return { success: false, error: sError.message };
 
-  const teamIds = (standings || []).map((s) => s.team_id);
+  const teamIds = (standings || []).map((s: { team_id: string }) => s.team_id);
 
   if (teamIds.length < 2) {
     return { success: false, error: 'Se necesitan al menos 2 equipos inscritos.' };

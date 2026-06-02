@@ -19,22 +19,16 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <h2 className="font-heading text-2xl font-bold text-center text-gray-900 mb-2">
-        Nueva Contraseña
+      <h2 className="mb-2 text-center font-heading text-2xl font-bold text-gray-900">
+        Nueva contraseña
       </h2>
-      <p className="text-center text-muted text-sm mb-6">
-        Ingresa tu nueva contraseña
-      </p>
+      <p className="mb-6 text-center text-sm text-muted">Ingresa tu nueva contraseña</p>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-destructive text-sm rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-destructive">{error}</div>}
 
       <form action={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
             Nueva contraseña
           </label>
           <input
@@ -43,13 +37,13 @@ export default function ResetPasswordPage() {
             type="password"
             required
             minLength={6}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="Mínimo 6 caracteres"
           />
         </div>
 
         <div>
-          <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="confirm_password" className="mb-1 block text-sm font-medium text-gray-700">
             Confirmar contraseña
           </label>
           <input
@@ -58,7 +52,7 @@ export default function ResetPasswordPage() {
             type="password"
             required
             minLength={6}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-uv3-green focus:border-transparent outline-none transition-all"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-uv3-green"
             placeholder="Repite tu contraseña"
           />
         </div>
@@ -66,9 +60,9 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-uv3-green text-white font-semibold rounded-lg hover:bg-uv3-green-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-uv3-green py-2.5 font-semibold text-white transition-colors hover:bg-uv3-green-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? 'Guardando...' : 'Cambiar Contraseña'}
+          {loading ? 'Guardando...' : 'Cambiar contraseña'}
         </button>
       </form>
     </>
