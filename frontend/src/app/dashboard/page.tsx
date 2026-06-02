@@ -6,10 +6,6 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   const supabase = await createClient();
 
-  if (!supabase) {
-    return <p className="px-6 py-12 text-red-600">Faltan las variables de Supabase.</p>;
-  }
-
   const [{ count: teamsCount }, { count: tournamentsCount }, { count: matchesCount }] =
     await Promise.all([
       supabase.from('teams').select('*', { count: 'exact', head: true }),
@@ -21,9 +17,7 @@ export default async function DashboardPage() {
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-12">
       <section className="mb-8 rounded-2xl bg-gradient-to-br from-uv3-green-dark to-uv3-green p-8 text-white shadow-lg">
         <p className="text-sm uppercase tracking-wide text-white/70">Panel principal</p>
-        <h1 className="mt-2 text-3xl font-bold">
-          {user?.full_name || user?.username || 'Usuario UV3'}
-        </h1>
+        <h1 className="mt-2 text-3xl font-bold">{user?.full_name || user?.username || 'Usuario UV3'}</h1>
         <p className="mt-3 max-w-2xl text-white/80">
           Aquí ves el estado general del sistema y los accesos rápidos a las partes más importantes.
         </p>
@@ -46,29 +40,12 @@ export default async function DashboardPage() {
 
       <section className="mt-8 grid gap-4 md:grid-cols-3">
         <Link
-          href="/teams"
+          href="/dashboard/tournaments"
           className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
         >
-          <h2 className="text-lg font-semibold text-uv3-green-dark">Ver equipos</h2>
-          <p className="mt-2 text-sm text-gray-600">Consulta el listado de equipos cargados.</p>
+          <h2 className="text-lg font-semibold text-uv3-green-dark">Organizar campeonatos</h2>
+          <p className="mt-2 text-sm text-gray-600">Crea, edita e inscribe equipos en cada torneo.</p>
         </Link>
-        <Link
-          href="/tournaments"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
-        >
-          <h2 className="text-lg font-semibold text-uv3-green-dark">Ver campeonatos</h2>
-          <p className="mt-2 text-sm text-gray-600">Revisa los torneos y su información básica.</p>
-        </Link>
-        <Link
-          href="/"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
-        >
-          <h2 className="text-lg font-semibold text-uv3-green-dark">Volver al inicio</h2>
-          <p className="mt-2 text-sm text-gray-600">Regresa a la portada principal.</p>
-        </Link>
-      </section>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-2">
         <Link
           href="/announcements"
           className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"

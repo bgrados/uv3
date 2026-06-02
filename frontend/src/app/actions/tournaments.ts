@@ -170,6 +170,19 @@ export async function registerTeamInTournamentAction(
   return { success: true };
 }
 
+export async function registerTeamInTournamentFormAction(
+  formData: FormData
+): Promise<ActionResponse> {
+  const tournamentId = formData.get('tournament_id') as string;
+  const teamId = formData.get('team_id') as string;
+
+  if (!tournamentId || !teamId) {
+    return { success: false, error: 'Selecciona un campeonato y un equipo.' };
+  }
+
+  return registerTeamInTournamentAction(tournamentId, teamId);
+}
+
 export async function getStandingsAction(
   tournamentId: string
 ): Promise<ActionResponse<Standing[]>> {
