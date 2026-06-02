@@ -1,9 +1,13 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/app/auth/actions';
 import { createClient } from '@/utils/supabase/server';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+  if (!user || user.role !== 'admin') {
+    redirect('/login?message=Solo el administrador puede entrar al panel.');
+  }
   const supabase = await createClient();
 
   const [{ count: teamsCount }, { count: tournamentsCount }, { count: matchesCount }] =

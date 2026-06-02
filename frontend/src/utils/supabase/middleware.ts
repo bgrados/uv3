@@ -13,31 +13,25 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  ) as unknown as UV3SupabaseClient;
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
+      },
+    },
+  }) as unknown as UV3SupabaseClient;
 
-  // Refresh session — important!
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Auth-protected routes
   const protectedPaths = ['/dashboard', '/teams', '/tournaments', '/admin'];
   const authPaths = ['/login', '/register', '/forgot-password'];
   const pathname = request.nextUrl.pathname;
@@ -45,16 +39,25 @@ export async function updateSession(request: NextRequest) {
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
 
-  if (isProtected && !user) {
+  let userRole: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    userRole = profile?.role ?? null;
+  }
+
+  const isAdmin = userRole === 'admin';
+
+  if (isProtected && (!user || (pathname.startsWith('/dashboard') && !isAdmin))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.searchParams.set('message', 'Solo el administrador puede entrar al panel.');
     url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }
 
   if (isAuthPage && user) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = isAdmin ? '/dashboard' : '/';
     return NextResponse.redirect(url);
   }
 

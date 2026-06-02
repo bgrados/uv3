@@ -7,13 +7,15 @@ import type { ActionResponse } from '@/types';
 
 export async function loginAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
-  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
+  if (!supabase) {
+    return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
+  }
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
   if (!email || !password) {
-    return { success: false, error: 'Email y contraseña son requeridos.' };
+    return { success: false, error: 'Email y contrasena son requeridos.' };
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -22,13 +24,30 @@ export async function loginAction(formData: FormData): Promise<ActionResponse> {
     return { success: false, error: 'Credenciales incorrectas. Intente nuevamente.' };
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'No se pudo validar el acceso.' };
+  }
+
+  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+
+  if (!profile || profile.role !== 'admin') {
+    await supabase.auth.signOut();
+    return { success: false, error: 'Este acceso es solo para administradores.' };
+  }
+
   revalidatePath('/', 'layout');
   redirect('/dashboard');
 }
 
 export async function signupAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
-  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
+  if (!supabase) {
+    return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
+  }
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -40,7 +59,7 @@ export async function signupAction(formData: FormData): Promise<ActionResponse> 
   }
 
   if (password.length < 6) {
-    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+    return { success: false, error: 'La contrasena debe tener al menos 6 caracteres.' };
   }
 
   const { error } = await supabase.auth.signUp({
@@ -73,12 +92,14 @@ export async function signoutAction(): Promise<void> {
 
 export async function forgotPasswordAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
-  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
+  if (!supabase) {
+    return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
+  }
 
   const email = formData.get('email') as string;
 
   if (!email) {
-    return { success: false, error: 'El correo electrónico es requerido.' };
+    return { success: false, error: 'El correo electronico es requerido.' };
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -94,7 +115,9 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
 
 export async function resetPasswordAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
-  if (!supabase) return { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' };
+  if (!supabase) {
+    return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
+  }
 
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirm_password') as string;
@@ -104,11 +127,11 @@ export async function resetPasswordAction(formData: FormData): Promise<ActionRes
   }
 
   if (password !== confirmPassword) {
-    return { success: false, error: 'Las contraseñas no coinciden.' };
+    return { success: false, error: 'Las contrasenas no coinciden.' };
   }
 
   if (password.length < 6) {
-    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+    return { success: false, error: 'La contrasena debe tener al menos 6 caracteres.' };
   }
 
   const { error } = await supabase.auth.updateUser({ password });
@@ -118,7 +141,7 @@ export async function resetPasswordAction(formData: FormData): Promise<ActionRes
   }
 
   revalidatePath('/', 'layout');
-  redirect('/login?message=Contraseña actualizada exitosamente.');
+  redirect('/login?message=Contrasena actualizada exitosamente.');
 }
 
 export async function getCurrentUser() {

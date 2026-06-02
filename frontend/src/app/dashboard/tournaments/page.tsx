@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { getCurrentUser } from '@/app/auth/actions';
 import {
@@ -49,6 +50,9 @@ async function registerTeamFormAction(formData: FormData) {
 
 export default async function TournamentAdminPage() {
   const user = await getCurrentUser();
+  if (!user || user.role !== 'admin') {
+    redirect('/login?message=Solo el administrador puede entrar al panel.');
+  }
   const supabase = await createClient();
 
   const [
