@@ -16,7 +16,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'UV3 Platform — Unidad Vecinal 3',
+  title: 'UV3 Platform - Unidad Vecinal 3',
   description:
     'Plataforma digital comunitaria y deportiva de la Unidad Vecinal 3. Campeonatos, fixtures, resultados en vivo, noticias y más.',
   keywords: ['unidad vecinal 3', 'liga deportiva', 'campeonato', 'fútbol', 'comunidad'],
