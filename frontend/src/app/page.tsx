@@ -234,7 +234,7 @@ export default async function HomePage() {
                 UV3 DIARIO
               </h1>
               <span className="font-heading italic text-sm text-uv3-green tracking-wide mt-1">
-                "El corazón digital y deportivo de la comunidad"
+                “El corazón digital y deportivo de la comunidad”
               </span>
             </div>
           </div>
