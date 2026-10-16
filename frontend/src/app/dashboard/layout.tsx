@@ -11,6 +11,10 @@ const NAV_ITEMS = [
   { href: '/dashboard/tournaments', label: 'Torneos' },
   { href: '/dashboard/matches', label: 'Partidos' },
   { href: '/dashboard/teams', label: 'Equipos' },
+  { href: '/dashboard/reservas', label: 'Reservas', adminOnly: true },
+  { href: '/dashboard/canchas', label: 'Canchas', adminOnly: true },
+  { href: '/dashboard/comercios', label: 'Comercios', adminOnly: true },
+  { href: '/dashboard/configuracion', label: 'Config.', adminOnly: true },
 ];
 
 async function signOutFormAction() {
@@ -38,15 +42,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
 
           <nav className="order-3 flex w-full gap-1 overflow-x-auto text-sm sm:order-2 sm:w-auto">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="whitespace-nowrap rounded-lg px-3 py-1.5 font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              if (item.adminOnly && user.role !== 'admin') return null;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="whitespace-nowrap rounded-lg px-3 py-1.5 font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
             <Link
               href="/"
               className="whitespace-nowrap rounded-lg px-3 py-1.5 font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"

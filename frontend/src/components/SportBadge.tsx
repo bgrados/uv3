@@ -4,6 +4,7 @@ const SPORT_CONFIG: Record<SportType, { label: string; emoji: string; color: str
   futbol: { label: 'Fútbol', emoji: '⚽', color: 'bg-green-100 text-green-800' },
   futbol_sala: { label: 'Fútbol Sala', emoji: '🥅', color: 'bg-blue-100 text-blue-800' },
   basquet: { label: 'Básquet', emoji: '🏀', color: 'bg-orange-100 text-orange-800' },
+  voley: { label: 'Vóley', emoji: '🏐', color: 'bg-purple-100 text-purple-800' },
 };
 
 interface SportBadgeProps {
@@ -24,3 +25,10 @@ export function SportBadge({ sport, size = 'md' }: SportBadgeProps) {
     </span>
   );
 }
+
+export const SPORT_LABEL: Record<SportType, string> = {
+  futbol: 'Fútbol',
+  futbol_sala: 'Fútbol Sala (Fúlbito)',
+  basquet: 'Básquet',
+  voley: 'Vóley',
+};

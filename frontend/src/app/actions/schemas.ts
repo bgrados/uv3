@@ -29,12 +29,98 @@ export const playerSchema = z.object({
 
 export type PlayerFormValues = z.infer<typeof playerSchema>;
 
+// --- Espacios / canchas -----------------------------------------------------
+const SPORTS = ['futbol', 'futbol_sala', 'basquet', 'voley'] as const;
+
+export const spaceSchema = z.object({
+  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.').max(120),
+  description: z.string().optional().nullable(),
+  image_url: z.string().url('URL inválida.').optional().nullable().or(z.literal('')),
+  day_rate: z.coerce.number().min(0, 'No puede ser negativo.').max(100000),
+  night_rate: z.coerce.number().min(0, 'No puede ser negativo.').max(100000),
+  event_day_rate: z.coerce.number().min(0).max(100000).optional().nullable(),
+  event_night_rate: z.coerce.number().min(0).max(100000).optional().nullable(),
+  night_start: z.string().min(4, 'Hora inválida.'),
+  night_end: z.string().min(1, 'Hora inválida.'),
+  allows_events: z.coerce.boolean().default(true),
+  is_active: z.boolean().optional().default(true),
+  sort_order: z.coerce.number().int().min(0).max(999).default(0),
+  sports: z.array(z.enum(SPORTS)).default([]),
+});
+
+export type SpaceFormValues = z.infer<typeof spaceSchema>;
+export const SPORT_OPTIONS = SPORTS;
+
+// --- Comercios --------------------------------------------------------------
+export const businessSchema = z.object({
+  name: z.string().min(2, 'El nombre es requerido.').max(120),
+  category: z.enum(['tienda', 'farmacia', 'mercado', 'restaurante', 'servicio', 'otro']),
+  description: z.string().max(600).optional().nullable(),
+  phone: z.string().max(40).optional().nullable(),
+  whatsapp: z.string().max(40).optional().nullable(),
+  address: z.string().max(200).optional().nullable(),
+  logo_url: z.string().optional().nullable(),
+  image_url: z.string().optional().nullable(),
+  is_active: z.coerce.boolean().default(true),
+  sort_order: z.coerce.number().int().min(0).max(999).default(0),
+});
+
+export type BusinessFormValues = z.infer<typeof businessSchema>;
+
+// --- Configuración del sitio ------------------------------------------------
+export const siteSettingsSchema = z.object({
+  site_name: z.string().min(2, 'El nombre es requerido.').max(120),
+  slogan: z.string().max(200).optional().nullable(),
+  logo_url: z.string().optional().nullable(),
+  favicon_url: z.string().optional().nullable(),
+  contact_phone: z.string().max(40).optional().nullable(),
+  whatsapp: z.string().max(40).optional().nullable(),
+  yape_number: z.string().max(40).optional().nullable(),
+  yape_holder: z.string().max(120).optional().nullable(),
+  facebook_url: z.string().max(300).optional().nullable(),
+  night_start: z.string().default('18:00'),
+  night_end: z.string().default('06:00'),
+});
+
+export type SiteSettingsFormValues = z.infer<typeof siteSettingsSchema>;
+
+// --- Reservas ---------------------------------------------------------------
+export const reservationSchema = z
+  .object({
+    space_id: z.string().uuid('Espacio inválido.'),
+    customer_name: z.string().min(3, 'Escribe tu nombre completo.').max(120),
+    customer_phone: z
+      .string()
+      .min(6, 'Ingresa un teléfono válido.')
+      .max(40)
+      .regex(/[0-9]/, 'Ingresa un teléfono válido.'),
+    customer_email: z.string().email('Correo inválido.').optional().or(z.literal('')).nullable(),
+    usage_type: z.enum(['deporte', 'evento']),
+    sport: z.enum(SPORTS).optional().nullable(),
+    event_description: z.string().max(400).optional().nullable(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida.'),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Hora de inicio inválida.'),
+    duration_minutes: z.coerce
+      .number()
+      .int()
+      .min(30, 'La reserva mínima es de 30 minutos.')
+      .max(24 * 60, 'La reserva no puede superar las 24 horas.'),
+    notes: z.string().max(500).optional().nullable(),
+    payment_proof_url: z.string().min(1, 'Adjunta tu comprobante de Yape.'),
+  })
+  .refine((d) => d.usage_type === 'evento' || !!d.sport, {
+    message: 'Selecciona el deporte.',
+    path: ['sport'],
+  });
+
+export type ReservationFormValues = z.infer<typeof reservationSchema>;
+
 // --- Tournament Schemas ---
 export const tournamentSchema = z
   .object({
     name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.').max(150),
     description: z.string().optional().nullable(),
-    sport: z.enum(['futbol', 'futbol_sala', 'basquet'], {
+    sport: z.enum(['futbol', 'futbol_sala', 'basquet', 'voley'], {
       message: 'Selecciona un deporte válido.',
     }).default('futbol'),
     format: z.enum(['liga', 'grupos', 'eliminacion'], {

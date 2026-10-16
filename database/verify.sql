@@ -14,7 +14,10 @@ WITH checks AS (
   FROM (VALUES
     ('users'), ('venues'), ('teams'), ('players'), ('tournaments'),
     ('matches'), ('standings'), ('goals'), ('sanctions'), ('schedules'),
-    ('announcements'), ('galleries')
+    ('announcements'), ('galleries'),
+    -- feature_reservas.sql
+    ('spaces'), ('space_sports'), ('space_blocks'), ('reservations'),
+    ('businesses'), ('site_settings')
   ) AS t(name)
 
   UNION ALL
@@ -28,7 +31,12 @@ WITH checks AS (
     ('on_auth_user_created'),
     ('trigger_recalculate_standings'),
     ('update_matches_timestamp'),
-    ('update_standings_timestamp')
+    ('update_standings_timestamp'),
+    -- feature_reservas.sql
+    ('update_spaces_timestamp'),
+    ('update_reservations_timestamp'),
+    ('update_businesses_timestamp'),
+    ('update_site_settings_timestamp')
   ) AS tr(name)
 
   UNION ALL
@@ -37,7 +45,9 @@ WITH checks AS (
   SELECT 'bucket', b.name,
          EXISTS (SELECT 1 FROM storage.buckets WHERE id = b.name)
   FROM (VALUES
-    ('team-logos'), ('player-photos'), ('tournament-banners')
+    ('team-logos'), ('player-photos'), ('tournament-banners'),
+    -- feature_reservas.sql
+    ('branding'), ('business-media'), ('payment-proofs')
   ) AS b(name)
 
   UNION ALL

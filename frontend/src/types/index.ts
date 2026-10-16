@@ -51,7 +51,111 @@ export interface Player {
 
 export type TournamentStatus = 'draft' | 'active' | 'finished';
 export type TournamentFormat = 'liga' | 'grupos' | 'eliminacion';
-export type SportType = 'futbol' | 'futbol_sala' | 'basquet';
+export type SportType = 'futbol' | 'futbol_sala' | 'basquet' | 'voley';
+
+// --- Reservas de canchas ---------------------------------------------------
+
+export interface Space {
+  id: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  image_url: string | null;
+  day_rate: number;
+  night_rate: number;
+  event_day_rate: number | null;
+  event_night_rate: number | null;
+  night_start: string;
+  night_end: string;
+  allows_events: boolean;
+  is_active: boolean;
+  sort_order: number;
+  sports?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpaceBlock {
+  id: string;
+  space_id: string;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ReservationStatus = 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+export type ReservationPaymentStatus = 'submitted' | 'verified' | 'rejected';
+export type UsageType = 'deporte' | 'evento';
+
+export interface Reservation {
+  id: string;
+  code: string;
+  space_id: string;
+  user_id: string | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  usage_type: 'deporte' | 'evento';
+  sport: SportType | 'otro' | null;
+  event_description: string | null;
+  start_at: string;
+  end_at: string;
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  price: number;
+  notes: string | null;
+  payment_status: 'submitted' | 'verified' | 'rejected';
+  payment_method: string;
+  payment_proof_url: string | null;
+  space?: Space;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReservationInterval {
+  start_at: string;
+  end_at: string;
+  kind: string;
+}
+
+// --- Comercios -------------------------------------------------------------
+
+export type BusinessCategory = 'tienda' | 'farmacia' | 'mercado' | 'restaurante' | 'servicio' | 'otro';
+
+export interface Business {
+  id: string;
+  name: string;
+  category: BusinessCategory;
+  description: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  address: string | null;
+  logo_url: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Configuración del sitio ----------------------------------------------
+
+export interface SiteSettings {
+  id: number;
+  site_name: string;
+  slogan: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
+  contact_phone: string | null;
+  whatsapp: string | null;
+  yape_number: string | null;
+  yape_holder: string | null;
+  facebook_url: string | null;
+  night_start: string;
+  night_end: string;
+  updated_at: string;
+}
 
 export interface Tournament {
   id: string;

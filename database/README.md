@@ -16,6 +16,7 @@ Ejecuta los archivos en este orden desde el SQL Editor de Supabase:
 6. `seeds.sql` — **sólo para entornos de prueba**: borra los datos de varias tablas y carga usuarios, equipos, jugadores, partidos, comunicados y galería de ejemplo.
 7. `fix_demo_users.sql` — **repara las cuentas demo** si ya existían y no pueden iniciar sesión (ver más abajo). No borra datos.
 8. `grant_admin.sql` — **promueve tu propia cuenta a `admin`** si te registraste con rol `user` y no puedes entrar al panel. Cambia el correo. No borra datos.
+9. `feature_reservas.sql` — **módulo de reservas de canchas, comercios y configuración del sitio**. Crea las tablas `spaces`, `space_sports`, `space_blocks`, `reservations`, `businesses` y `site_settings`, los buckets `branding`, `business-media` y `payment-proofs`, sus políticas RLS, la lógica de precio por hora (día/noche) y datos de ejemplo. Es idempotente y no borra datos.
 
 > Si sólo necesitas poner al día una base ya creada, pega `apply_pending.sql`
 > (contiene `policies.sql` + `migration_sport.sql` + `storage.sql` +

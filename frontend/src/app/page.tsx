@@ -2,6 +2,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getCurrentUser } from '@/app/auth/actions';
 import { createClient } from '@/utils/supabase/server';
+import { BusinessCarousel } from '@/components/BusinessCarousel';
+import { getBusinessesAction } from '@/app/actions/businesses';
+import { getSiteSettingsAction } from '@/app/actions/settings';
 
 // =========================================================================
 // MOCK DATA FALLBACKS (Realistic content inspired by UV3's local life)
@@ -83,6 +86,13 @@ const FALLBACK_MATCHES = [
 
 export default async function HomePage() {
   const user = await getCurrentUser();
+
+  const [settings, businessesResult] = await Promise.all([
+    getSiteSettingsAction(),
+    getBusinessesAction(),
+  ]);
+  const businesses = businessesResult.success ? businessesResult.data ?? [] : [];
+  const logoSrc = settings.logo_url || '/logo.jpg';
 
   // ─────────────────────────────────────────────────────────────────
   // DATA FETCHING (Supabase with graceful fallback)
@@ -219,7 +229,7 @@ export default async function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
             <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-uv3-green-dark p-1 bg-white shadow-md">
               <Image
-                src="/logo.jpg"
+                src={logoSrc}
                 alt="Logo Unidad Vecinal 3"
                 fill
                 className="rounded-full object-cover"
@@ -265,6 +275,8 @@ export default async function HomePage() {
             <Link href="/tournaments" className="hover:text-uv3-green transition-colors pb-1">Campeonatos</Link>
             <Link href="/teams" className="hover:text-uv3-green transition-colors pb-1">Equipos</Link>
             <Link href="/gallery" className="hover:text-uv3-green transition-colors pb-1">Galería de Fotos</Link>
+            <Link href="/reservas" className="hover:text-uv3-green transition-colors pb-1">Reservar Cancha</Link>
+            <Link href="/comercios" className="hover:text-uv3-green transition-colors pb-1">Comercios</Link>
             <a 
               href="https://www.facebook.com/profile.php?id=61564444126122" 
               target="_blank" 
@@ -593,6 +605,23 @@ export default async function HomePage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────
+          COMERCIOS DE LA UNIDAD (Carrusel)
+          ───────────────────────────────────────────────────────────────── */}
+      {businesses.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 py-8">
+          <div className="mb-4 flex items-end justify-between border-b-4 border-uv3-green pb-1.5">
+            <h3 className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-uv3-green-dark">
+              Comercios y Servicios de la Unidad
+            </h3>
+            <Link href="/comercios" className="text-[11px] font-bold uppercase tracking-wider text-uv3-green hover:underline">
+              Ver todos →
+            </Link>
+          </div>
+          <BusinessCarousel businesses={businesses} />
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────
           EDITORIAL BOTTOM SECTION (Páginas del Diario)
           ───────────────────────────────────────────────────────────────── */}
       <section className="bg-stone-100 border-t border-b border-stone-300 py-8">
@@ -626,7 +655,7 @@ export default async function HomePage() {
           <div className="flex items-center gap-4">
             <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/20 bg-white p-0.5">
               <Image
-                src="/logo.jpg"
+                src={logoSrc}
                 alt="Logo UV3"
                 fill
                 className="rounded-full object-cover"
