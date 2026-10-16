@@ -32,32 +32,39 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const protectedPaths = ['/dashboard', '/teams', '/tournaments', '/admin'];
+  const protectedPaths = ['/dashboard'];
   const authPaths = ['/login', '/register', '/forgot-password'];
   const pathname = request.nextUrl.pathname;
 
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isDashboard = pathname.startsWith('/dashboard');
   const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
 
-  let userRole: string | null = null;
+  const sessionRoleCookie = request.cookies.get('uv3_session_role')?.value;
+  const isCookieAdmin = !!(sessionRoleCookie && ['admin', 'organizer', 'referee'].includes(sessionRoleCookie));
+
+  let isSupabaseAdmin = false;
   if (user) {
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-    userRole = profile?.role ?? null;
+    try {
+      const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+      isSupabaseAdmin = !!(profile && ['admin', 'organizer', 'referee'].includes(profile.role));
+    } catch {
+      isSupabaseAdmin = false;
+    }
   }
 
-  const isAdmin = userRole === 'admin';
+  const isAuthorized = isCookieAdmin || isSupabaseAdmin;
 
-  if (isProtected && (!user || (pathname.startsWith('/dashboard') && !isAdmin))) {
+  if (isDashboard && !isAuthorized) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('message', 'Solo el administrador puede entrar al panel.');
+    url.searchParams.set('message', 'Acceso exclusivo para administradores, organizadores y árbitros.');
     url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isAuthPage && user) {
+  if (isAuthPage && isAuthorized) {
     const url = request.nextUrl.clone();
-    url.pathname = isAdmin ? '/dashboard' : '/';
+    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 

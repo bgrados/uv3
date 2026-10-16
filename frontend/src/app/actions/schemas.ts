@@ -34,6 +34,9 @@ export const tournamentSchema = z
   .object({
     name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.').max(150),
     description: z.string().optional().nullable(),
+    sport: z.enum(['futbol', 'futbol_sala', 'basquet'], {
+      message: 'Selecciona un deporte válido.',
+    }).default('futbol'),
     format: z.enum(['liga', 'grupos', 'eliminacion'], {
       message: 'Selecciona un formato válido.',
     }),

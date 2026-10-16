@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
+import { getCurrentUser } from '@/app/auth/actions';
 import { tournamentSchema } from './schemas';
 import type { ActionResponse, Tournament, Standing } from '@/types';
 
@@ -42,22 +43,16 @@ export async function createTournamentAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: 'No autenticado.' };
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || !['admin', 'organizer'].includes(profile.role)) {
+  if (!['admin', 'organizer'].includes(user.role)) {
     return { success: false, error: 'No tienes permisos para crear torneos.' };
   }
 
   const raw = {
     name: formData.get('name') as string,
     description: (formData.get('description') as string) || null,
+    sport: (formData.get('sport') as string) || 'futbol',
     format: formData.get('format') as string,
     category: (formData.get('category') as string) || 'libre',
     start_date: formData.get('start_date') as string,
@@ -91,6 +86,7 @@ export async function updateTournamentAction(
   const raw = {
     name: formData.get('name') as string,
     description: (formData.get('description') as string) || null,
+    sport: (formData.get('sport') as string) || 'futbol',
     format: formData.get('format') as string,
     category: (formData.get('category') as string) || 'libre',
     start_date: formData.get('start_date') as string,
@@ -122,16 +118,9 @@ export async function deleteTournamentAction(id: string): Promise<ActionResponse
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: 'No autenticado.' };
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || !['admin', 'organizer'].includes(profile.role)) {
+  if (!['admin', 'organizer'].includes(user.role)) {
     return { success: false, error: 'No tienes permisos para eliminar torneos.' };
   }
 

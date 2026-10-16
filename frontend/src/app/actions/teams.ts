@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
+import { getCurrentUser } from '@/app/auth/actions';
 import { teamSchema } from './schemas';
 import type { ActionResponse, Team } from '@/types';
 
@@ -40,16 +41,9 @@ export async function createTeamAction(formData: FormData): Promise<ActionRespon
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: 'No autenticado.' };
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || !['admin', 'organizer'].includes(profile.role)) {
+  if (!['admin', 'organizer'].includes(user.role)) {
     return { success: false, error: 'No tienes permisos para crear equipos.' };
   }
 
@@ -105,16 +99,9 @@ export async function deleteTeamAction(id: string): Promise<ActionResponse> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: 'No autenticado.' };
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || !['admin', 'organizer'].includes(profile.role)) {
+  if (!['admin', 'organizer'].includes(user.role)) {
     return { success: false, error: 'No tienes permisos para eliminar equipos.' };
   }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
+import { getCurrentUser } from '@/app/auth/actions';
 import { updateMatchScoreSchema } from './schemas';
 import {
   generateLeagueFixture,
@@ -19,16 +20,9 @@ export async function generateTournamentFixtureAction(
   if (!supabase) return NO_SUPABASE;
 
   // Permission check
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { success: false, error: 'No autenticado.' };
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || !['admin', 'organizer'].includes(profile.role)) {
+  if (!['admin', 'organizer'].includes(user.role)) {
     return { success: false, error: 'No tienes permisos para generar fixtures.' };
   }
 
@@ -167,6 +161,53 @@ export async function updateMatchScoreAction(
 
   if (match) {
     revalidatePath(`/tournaments/${match.tournament_id}`);
+    revalidatePath('/dashboard/matches');
+  }
+
+  return { success: true };
+}
+
+export async function scheduleMatchAction(formData: FormData): Promise<ActionResponse> {
+  const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'referee'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para programar partidos.' };
+  }
+
+  const matchId = formData.get('match_id') as string;
+  if (!matchId) return { success: false, error: 'ID de partido requerido.' };
+
+  const updateData: Record<string, unknown> = {};
+
+  const dateTime = formData.get('date_time') as string | null;
+  if (dateTime) updateData.date_time = dateTime;
+
+  const venueId = formData.get('venue_id') as string | null;
+  if (venueId) updateData.venue_id = venueId;
+
+  const refereeId = formData.get('referee_id') as string | null;
+  if (refereeId) updateData.referee_id = refereeId;
+
+  if (Object.keys(updateData).length === 0) {
+    return { success: false, error: 'No hay datos para actualizar.' };
+  }
+
+  const { error } = await supabase.from('matches').update(updateData).eq('id', matchId);
+  if (error) return { success: false, error: error.message };
+
+  const { data: match } = await supabase
+    .from('matches')
+    .select('tournament_id')
+    .eq('id', matchId)
+    .single();
+
+  if (match) {
+    revalidatePath(`/tournaments/${match.tournament_id}`);
+    revalidatePath('/dashboard/matches');
+    revalidatePath(`/dashboard/matches/${matchId}`);
   }
 
   return { success: true };

@@ -51,6 +51,7 @@ export interface Player {
 
 export type TournamentStatus = 'draft' | 'active' | 'finished';
 export type TournamentFormat = 'liga' | 'grupos' | 'eliminacion';
+export type SportType = 'futbol' | 'futbol_sala' | 'basquet';
 
 export interface Tournament {
   id: string;
@@ -58,6 +59,7 @@ export interface Tournament {
   description: string | null;
   status: TournamentStatus;
   format: TournamentFormat;
+  sport: SportType;
   category: string;
   banner_url: string | null;
   start_date: string | null;

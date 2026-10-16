@@ -1,1 +1,4 @@
 .vercel
+Thumbs.db
+*.env*
+!*.env.example
