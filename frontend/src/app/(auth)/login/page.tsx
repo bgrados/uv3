@@ -10,6 +10,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+  const redirectTo = searchParams.get('redirectTo') ?? '';
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -36,20 +37,8 @@ function LoginForm() {
 
       {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-destructive">{error}</div>}
 
-      <div className="mb-5 rounded-lg border border-uv3-green/20 bg-uv3-green/5 p-3.5 text-xs text-gray-700">
-        <p className="font-bold text-uv3-green-dark mb-1 flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-uv3-green"></span>
-          Credenciales de acceso:
-        </p>
-        <p className="text-gray-600">
-          • <strong>Admin:</strong> <code className="rounded bg-white px-1.5 py-0.5 font-mono text-stone-800 border">admin@uv3.com</code> | Clave: <code className="rounded bg-white px-1.5 py-0.5 font-mono text-stone-800 border">password123</code>
-        </p>
-        <p className="text-gray-600 mt-1">
-          • <strong>Organizador:</strong> <code className="rounded bg-white px-1.5 py-0.5 font-mono text-stone-800 border">organizador@uv3.com</code> | Clave: <code className="rounded bg-white px-1.5 py-0.5 font-mono text-stone-800 border">password123</code>
-        </p>
-      </div>
-
       <form action={handleSubmit} className="space-y-4">
+        {redirectTo ? <input type="hidden" name="redirectTo" value={redirectTo} /> : null}
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
             Correo del administrador

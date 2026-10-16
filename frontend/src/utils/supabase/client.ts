@@ -2,13 +2,11 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import type { UV3SupabaseClient } from './types';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 
 export function createClient(): UV3SupabaseClient {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qhafedyvlwwzjzkwbvsu.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-
   return createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
   ) as unknown as UV3SupabaseClient;
 }

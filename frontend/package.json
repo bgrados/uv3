@@ -9,7 +9,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:db": "node scripts/check-supabase.mjs",
+    "postinstall": "node scripts/patch-next-fat32.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

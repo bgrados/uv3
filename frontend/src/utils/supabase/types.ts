@@ -17,7 +17,10 @@ export interface UV3SupabaseUser {
 
 export interface UV3SupabaseAuthClient {
   getUser(): Promise<{ data: { user: UV3SupabaseUser | null } }>;
-  signInWithPassword(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>;
+  signInWithPassword(args: {
+    email: string;
+    password: string;
+  }): Promise<{ data: { user: UV3SupabaseUser | null } | null; error: { message: string } | null }>;
   signUp(args: AuthArgs): Promise<{ error: { message: string } | null }>;
   signOut(): Promise<{ error: { message: string } | null }>;
   resetPasswordForEmail(email: string, options: { redirectTo: string }): Promise<{ error: { message: string } | null }>;

@@ -5,10 +5,11 @@ import { createClient } from '@/utils/supabase/server';
 import { MatchScoreControl } from '@/components/MatchScoreControl';
 import { SportBadge } from '@/components/SportBadge';
 import { scheduleMatchAction } from '@/app/actions/fixtures';
-import type { Match, Tournament, Venue } from '@/types';
+import type { Match, Team, Tournament, User, Venue } from '@/types';
 
 interface PageProps {
   params: Promise<{ matchId: string }>;
+  searchParams: Promise<{ ok?: string; error?: string }>;
 }
 
 const STATUS_DISPLAY: Record<Match['status'], { label: string; color: string }> = {
@@ -20,19 +21,34 @@ const STATUS_DISPLAY: Record<Match['status'], { label: string; color: string }> 
 
 async function scheduleMatchFormAction(formData: FormData) {
   'use server';
-  await scheduleMatchAction(formData);
+  const matchId = formData.get('match_id') as string;
+  const result = await scheduleMatchAction(formData);
+  if (!result.success) {
+    redirect(`/dashboard/matches/${matchId}?error=${encodeURIComponent(result.error ?? 'No se pudo guardar.')}`);
+  }
+  redirect(`/dashboard/matches/${matchId}?ok=Programación guardada correctamente.`);
 }
 
-export default async function MatchControlPage({ params }: PageProps) {
+export default async function MatchControlPage({ params, searchParams }: PageProps) {
   const { matchId } = await params;
+  const { ok, error } = await searchParams;
 
   const user = await getCurrentUser();
   if (!user || !['admin', 'organizer', 'referee'].includes(user.role)) {
     redirect('/login?message=Se requieren permisos de administrador, organizador o árbitro.');
   }
 
-  let matchData: any = null;
-  let venuesData: any = null;
+  type MatchRow = Omit<Match, 'home_team' | 'away_team' | 'venue' | 'referee'> & {
+    home_team?: Partial<Team> | null;
+    away_team?: Partial<Team> | null;
+    venue?: Partial<Venue> | null;
+    referee?: Partial<User> | null;
+    tournament?: Pick<Tournament, 'id' | 'name' | 'sport' | 'status'>;
+  };
+
+  let matchData: MatchRow | null = null;
+  let venuesData: Pick<Venue, 'id' | 'name'>[] | null = null;
+  let refereesData: Pick<User, 'id' | 'full_name'>[] = [];
 
   try {
     const supabase = await createClient();
@@ -56,6 +72,13 @@ export default async function MatchControlPage({ params }: PageProps) {
 
       const { data: vData } = await supabase.from('venues').select('id, name').order('name');
       venuesData = vData;
+
+      const { data: refData } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .eq('role', 'referee')
+        .order('full_name');
+      refereesData = (refData ?? []) as Pick<User, 'id' | 'full_name'>[];
     }
   } catch (err) {
     console.warn('Error al consultar partido en Supabase:', err);
@@ -122,6 +145,17 @@ export default async function MatchControlPage({ params }: PageProps) {
         <span>›</span>
         <span className="font-semibold text-uv3-green-dark">Control de partido</span>
       </nav>
+
+      {ok && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+          ✅ {ok}
+        </div>
+      )}
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          ⚠️ {error}
+        </div>
+      )}
 
       {/* Match Header */}
       <section className="mb-8 rounded-2xl bg-gradient-to-br from-uv3-green-dark to-uv3-green p-8 text-white shadow-lg">
@@ -220,6 +254,28 @@ export default async function MatchControlPage({ params }: PageProps) {
                   </select>
                 </label>
               )}
+
+              <label className="grid gap-1.5">
+                <span className="text-xs font-semibold text-gray-700">Árbitro</span>
+                <select
+                  id="match-referee"
+                  name="referee_id"
+                  defaultValue={match.referee_id ?? ''}
+                  className="rounded-lg border px-3 py-2 text-sm outline-none focus:border-uv3-green"
+                >
+                  <option value="">Sin árbitro asignado</option>
+                  {refereesData.map((referee) => (
+                    <option key={referee.id} value={referee.id}>
+                      {referee.full_name ?? 'Árbitro sin nombre'}
+                    </option>
+                  ))}
+                </select>
+                {refereesData.length === 0 && (
+                  <span className="text-xs text-gray-500">
+                    No hay usuarios con rol de árbitro registrados.
+                  </span>
+                )}
+              </label>
 
               <button
                 id="save-schedule"

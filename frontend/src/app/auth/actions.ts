@@ -1,10 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import type { ActionResponse } from '@/types';
+import { isSupabaseConfigured } from '@/utils/supabase/config';
+import type { ActionResponse, User, UserRole } from '@/types';
+import { isStaffRole } from '@/utils/roles';
 
 export async function loginAction(formData: FormData): Promise<ActionResponse> {
   const email = (formData.get('email') as string)?.trim().toLowerCase();
@@ -14,72 +16,53 @@ export async function loginAction(formData: FormData): Promise<ActionResponse> {
     return { success: false, error: 'Email y contraseña son requeridos.' };
   }
 
-  const cookieStore = await cookies();
-
-  // 1. Intentar validar con Supabase Auth si está configurado
-  try {
-    const supabase = await createClient();
-    if (supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (!error && data?.user) {
-        const { data: profile } = await supabase.from('users').select('role').eq('id', data.user.id).single();
-        if (profile && ['admin', 'organizer', 'referee'].includes(profile.role)) {
-          cookieStore.set('uv3_session_role', profile.role, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7,
-          });
-          cookieStore.set('uv3_session_email', email, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7,
-          });
-          revalidatePath('/', 'layout');
-          redirect('/dashboard');
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Supabase auth attempt encountered an error:', err);
+  if (!isSupabaseConfigured()) {
+    return {
+      success: false,
+      error:
+        'El sistema aún no está configurado: faltan las claves de Supabase. Contacta al administrador.',
+    };
   }
 
-  // 2. Soporte para cuentas administrativas autorizadas de UV3
-  if (
-    (email === 'admin@uv3.com' && password === 'password123') ||
-    (email === 'organizador@uv3.com' && password === 'password123') ||
-    (email === 'arbitro@uv3.com' && password === 'password123')
-  ) {
-    const role = email === 'admin@uv3.com' ? 'admin' : email === 'organizador@uv3.com' ? 'organizer' : 'referee';
-    cookieStore.set('uv3_session_role', role, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    cookieStore.set('uv3_session_email', email, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    revalidatePath('/', 'layout');
-    redirect('/dashboard');
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data?.user) {
+    return { success: false, error: 'Credenciales incorrectas. Verifique el correo y la contraseña.' };
   }
 
-  return { success: false, error: 'Credenciales incorrectas. Verifique el correo y la contraseña.' };
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', data.user.id)
+    .single();
+
+  if (!profile || !isStaffRole(profile.role as UserRole)) {
+    // La cuenta es válida pero no puede administrar la plataforma.
+    await supabase.auth.signOut();
+    return {
+      success: false,
+      error:
+        'Tu cuenta no tiene permisos para el panel administrativo (se requiere rol de administrador, organizador o árbitro).',
+    };
+  }
+
+  revalidatePath('/', 'layout');
+
+  // Sólo se permiten rutas internas del panel para evitar open redirects.
+  const rawRedirect = (formData.get('redirectTo') as string | null) ?? '';
+  const redirectTo = rawRedirect.startsWith('/dashboard') ? rawRedirect : '/dashboard';
+
+  redirect(redirectTo);
 }
 
 export async function signupAction(formData: FormData): Promise<ActionResponse> {
-  const supabase = await createClient();
-  if (!supabase) {
+  if (!isSupabaseConfigured()) {
     return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
   }
+
+  const supabase = await createClient();
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -114,26 +97,22 @@ export async function signupAction(formData: FormData): Promise<ActionResponse> 
 }
 
 export async function signoutAction(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete('uv3_session_role');
-  cookieStore.delete('uv3_session_email');
   try {
     const supabase = await createClient();
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
   } catch {
-    // Ignore Supabase signout error
+    // Si Supabase no responde, igual cerramos la sesión local y volvemos al login.
   }
   revalidatePath('/', 'layout');
   redirect('/login');
 }
 
 export async function forgotPasswordAction(formData: FormData): Promise<ActionResponse> {
-  const supabase = await createClient();
-  if (!supabase) {
+  if (!isSupabaseConfigured()) {
     return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
   }
+
+  const supabase = await createClient();
 
   const email = formData.get('email') as string;
 
@@ -141,8 +120,13 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
     return { success: false, error: 'El correo electronico es requerido.' };
   }
 
+  const headerList = await headers();
+  const forwardedProto = headerList.get('x-forwarded-proto') ?? 'http';
+  const host = headerList.get('host') ?? 'localhost:3000';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${forwardedProto}://${host}`;
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,
+    redirectTo: `${siteUrl}/reset-password`,
   });
 
   if (error) {
@@ -153,10 +137,11 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
 }
 
 export async function resetPasswordAction(formData: FormData): Promise<ActionResponse> {
-  const supabase = await createClient();
-  if (!supabase) {
+  if (!isSupabaseConfigured()) {
     return { success: false, error: 'El sistema no esta configurado aun. Contacta al administrador.' };
   }
+
+  const supabase = await createClient();
 
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirm_password') as string;
@@ -183,47 +168,42 @@ export async function resetPasswordAction(formData: FormData): Promise<ActionRes
   redirect('/login?message=Contrasena actualizada exitosamente.');
 }
 
-export async function getCurrentUser() {
-  const cookieStore = await cookies();
+export async function getCurrentUser(): Promise<User | null> {
+  if (!isSupabaseConfigured()) return null;
 
-  // 1. Intentar validar sesión con Supabase Auth
   try {
     const supabase = await createClient();
-    if (supabase) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+    if (!user) return null;
 
-        if (profile) return profile;
-      }
-    }
-  } catch {
-    // En caso de que Supabase no esté configurado o falle la red
-  }
+    const { data: profile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-  // 2. Verificar cookie de sesión administrativa
-  const sessionRole = cookieStore.get('uv3_session_role');
-  const sessionEmail = cookieStore.get('uv3_session_email');
+    if (profile) return profile as User;
 
-  if (sessionRole?.value && ['admin', 'organizer', 'referee'].includes(sessionRole.value)) {
-    const email = sessionEmail?.value || 'admin@uv3.com';
+    // La cuenta existe en Auth pero aún no tiene perfil en public.users
+    // (el trigger `handle_new_user` normalmente lo crea). Se devuelve un perfil
+    // mínimo sin privilegios administrativos.
+    const metadata = (user.user_metadata ?? {}) as Record<string, string | undefined>;
+    const now = new Date().toISOString();
+
     return {
-      id: email === 'admin@uv3.com' ? 'a1111111-1111-1111-1111-111111111111' : 'o2222222-2222-2222-2222-222222222222',
-      email,
-      full_name: email === 'admin@uv3.com' ? 'Administrador UV3' : email === 'organizador@uv3.com' ? 'Organizador Ligas' : 'Árbitro Oficial',
-      username: email.split('@')[0],
-      role: sessionRole.value as any,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      id: user.id,
+      email: user.email ?? '',
+      full_name: metadata.full_name ?? null,
+      username: metadata.username ?? null,
+      role: 'user',
+      created_at: now,
+      updated_at: now,
     };
+  } catch {
+    // Supabase no configurado o error de red: sin sesión válida.
+    return null;
   }
-
-  return null;
 }

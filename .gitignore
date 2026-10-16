@@ -2,3 +2,7 @@
 Thumbs.db
 *.env*
 !*.env.example
+
+# Logs locales de los scripts
+scripts/push_output.log
+*.log

@@ -97,6 +97,7 @@ uv3-platform/
   * `delegate`: Delegado de equipo; administra la plantilla de su equipo (jugadores, dorsales, fotos).
   * `referee`: Asignado a partidos específicos para cargar alineaciones, goles, tarjetas y resultado final.
   * `user`: Vecino o simpatizante general con acceso a consultar información, tablas, fotos y noticias.
+* **Acceso al panel `/dashboard`:** sólo `admin`, `organizer` y `referee` (validado en `middleware.ts`, en el layout del panel y en cada Server Action). `delegate` tiene políticas RLS propias en la base de datos pero todavía no tiene interfaz dedicada: hoy la plantilla se administra desde el panel con el rol correspondiente. *Pendiente: portal del delegado.*
 
 ### 4.4. Portal de Noticias y Galería Multimedia
 * Categorización de comunicados (`general`, `deportes`, `eventos`, `comunicado`).
@@ -121,6 +122,8 @@ Para llevar **UV3 Platform** de su estado actual a una plataforma de nivel profe
 
 ### Eje 1: Base de Datos y Rendimiento (PostgreSQL / Supabase)
 
+> **Estado (MVP):** ya implementado en [`database/schema.sql`](file:///f:/uv3-platform/database/schema.sql): el trigger `recalculate_tournament_standings` actualiza `standings` de forma atómica tras cada cambio de `matches` y los índices críticos (incluidos `matches (tournament_id, round)`, `matches (status)` y `players (team_id, dni)`) están declarados en ese mismo archivo. Verificar con [`database/verify.sql`](file:///f:/uv3-platform/database/verify.sql).
+
 1. **Vistas Materializadas o Tablas Agregadas para `standings`:**
    * *Situación actual:* La tabla de posiciones se recalcula o consulta con joins en tiempo real.
    * *Recomendación:* Implementar un trigger en PostgreSQL que actualice `standings` atómicamente tras el cierre de cada partido mediante una función `SECURITY DEFINER`, o usar una `MATERIALIZED VIEW` refrescada concurrentemente (`REFRESH MATERIALIZED VIEW CONCURRENTLY`).
@@ -137,13 +140,15 @@ Para llevar **UV3 Platform** de su estado actual a una plataforma de nivel profe
 
 ### Eje 3: Gestión de Archivos y Multimedia (Supabase Storage)
 
+> **Estado (MVP):** implementado en [`database/storage.sql`](file:///f:/uv3-platform/database/storage.sql): ya crea los buckets `team-logos`, `player-photos` y `tournament-banners` (públicos, con límite de tamaño y tipos MIME restringidos) y sus políticas RLS de lectura pública / escritura para roles administrativos. El panel de equipos ya sube escudos y fotos.
+
 1. **Buckets Privados y Públicos con CDN:**
    * Configurar 3 buckets en Supabase Storage:
-     * `team-logos` (público, con compresión WebP automática).
-     * `player-photos` (público/restringido, verificación de identidad por delegados).
-     * `community-gallery` (optimizado para álbumes fotográficos de alta resolución).
+     * `team-logos` (público, con compresión WebP automática). **✔ creado en `storage.sql`**
+     * `player-photos` (público/restringido, verificación de identidad por delegados). **✔ creado en `storage.sql`**
+     * `community-gallery` (optimizado para álbumes fotográficos de alta resolución). *Pendiente.*
 2. **Subida Directa desde el Cliente con Signed URLs:**
-   * Implementar subidas seguras pre-firmadas para no saturar las Serverless Functions de Vercel con buffers de imágenes de alta resolución.
+   * Implementar subidas seguras pre-firmadas para no saturar las Serverless Functions de Vercel con buffers de imágenes de alta resolución. *Pendiente: hoy la imagen viaja por Server Action (límite de 4 MB).*
 
 ### Eje 4: Experiencia Móvil y Modo Offline para Árbitros (PWA)
 
@@ -158,7 +163,8 @@ Para llevar **UV3 Platform** de su estado actual a una plataforma de nivel profe
    * Regla de negocio en base de datos para impedir que un mismo jugador esté inscrito en dos equipos distintos en el mismo torneo.
    * Validación automática de suspensión por acumulación de tarjetas (ej. 2 amarillas en partidos consecutivos o 1 roja directa = 1 o más fechas de suspensión automática en la siguiente fecha del fixture).
 2. **Protección de Rutas en Middleware:**
-   * Enriquecer [`middleware.ts`](file:///f:/uv3-platform/frontend/src/middleware.ts) para validar el rol del usuario en la sesión antes de permitir el acceso a rutas protegidas (`/dashboard/tournaments`, `/dashboard/matches`), evitando carga innecesaria en el renderizado del servidor.
+   * *Estado (MVP):* [`frontend/src/utils/supabase/middleware.ts`](file:///f:/uv3-platform/frontend/src/utils/supabase/middleware.ts) ya no autoriza por la cookie `uv3_session_role` (manipulable por el cliente). Ahora valida la sesión real de Supabase (`auth.getUser()`) y lee el rol desde `public.users`, bloqueando `/dashboard` salvo roles `admin`, `organizer` y `referee`. Además se eliminó el bypass de credenciales fijas en el login y el usuario sintético de `getCurrentUser()`.
+   * *Pendiente:* cachear la consulta de rol (o exponerlo en el `app_metadata` del token) para evitar una llamada a la base por cada petición protegida.
 
 ### Eje 6: Integración Continua y DevOps
 
@@ -171,9 +177,27 @@ Para llevar **UV3 Platform** de su estado actual a una plataforma de nivel profe
 
 ## 7. Hoja de Ruta Sugerida (Roadmap de Implementación)
 
+### 7.1. Estado del MVP (puesta en marcha)
+
+| Trabajo | Estado | Evidencia / pendiente |
+| :--- | :--- | :--- |
+| Compilación limpia del frontend (`tsc`, `eslint`, `next build`) | **✔ Listo** | `npx tsc --noEmit`, `npm run lint`, `npm run build` sin errores |
+| Corrección de tipos de autenticación | **✔ Listo** | `signInWithPassword` ahora devuelve `data` + `error` |
+| Seguridad del acceso al panel | **✔ Listo** | Sin credenciales fijas en `auth/actions.ts`, sin usuario sintético y middleware con sesión real + rol desde `public.users` |
+| Navegación del panel | **✔ Listo** | `dashboard/layout.tsx` con menú, rol visible y cierre de sesión |
+| UI de equipos y jugadores | **✔ Listo** | `dashboard/teams` (alta/baja) y `dashboard/teams/[teamId]` (escudo, datos, plantilla CRUD con fotos) |
+| Ficha pública de equipo | **✔ Listo** | `teams/[teamId]` con plantilla por posición (no expone DNI) |
+| Asignación de árbitro por partido | **✔ Listo** | Selector en `dashboard/matches/[matchId]` dentro de "Programar partido" |
+| Buckets y políticas de Storage | **✔ Listo (script)** | `database/storage.sql` (falta ejecutarlo en Supabase) |
+| Verificación del esquema en Supabase | **⏳ Pendiente** | Ejecutar `database/verify.sql` en el SQL Editor |
+| Claves reales en el entorno local | **⏳ Pendiente** | `vercel env pull frontend/.env.local` (hoy hay placeholders) |
+| Primer despliegue validado | **⏳ Pendiente** | Publicar en Vercel una vez ejecutados los SQL |
+
+### 7.2. Roadmap de producto (posterior al MVP)
+
 | Fase | Duración Estimada | Entregables Principales |
 | :--- | :--- | :--- |
-| **Fase 1: Configuración & Enlace** | Inmediata | Carga de claves reales en `.env.local` y Vercel, ejecución de esquemas y políticas RLS en Supabase, verificación de primer inicio de sesión. |
+| **Fase 1: Configuración & Enlace** | Inmediata | Carga de claves reales en `.env.local` y Vercel, ejecución de esquemas, políticas RLS y `storage.sql` en Supabase, verificación de primer inicio de sesión. |
 | **Fase 2: Motor Deportivo Completo** | 1 - 2 semanas | Tabla de goleadores, sanciones automáticas por tarjetas, actas de partido en PDF descargables para delegados. |
 | **Fase 3: Optimización Realtime & PWA** | 2 semanas | Suscripción WebSocket a partidos en vivo, configuración de Service Worker (PWA) e interfaz móvil optimizada para árbitros en cancha. |
 | **Fase 4: Portal Comunitario Avanzado** | 2 semanas | Módulo de reservas de canchas comunales con horarios, votaciones vecinales y buzón de sugerencias a la junta directiva. |

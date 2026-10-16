@@ -1,16 +1,14 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { UV3SupabaseClient } from './types';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 
 export async function createClient(): Promise<UV3SupabaseClient> {
   const cookieStore = await cookies();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qhafedyvlwwzjzkwbvsu.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-
   return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
