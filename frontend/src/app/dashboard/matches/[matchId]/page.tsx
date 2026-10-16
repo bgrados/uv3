@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { MatchScoreControl } from '@/components/MatchScoreControl';
 import { SportBadge } from '@/components/SportBadge';
 import { scheduleMatchAction } from '@/app/actions/fixtures';
+import { DEMO_MATCH_IDS, DEMO_TOURNAMENT_ID, DEMO_VENUE_ID } from '@/utils/demo';
 import type { Match, Team, Tournament, User, Venue } from '@/types';
 
 interface PageProps {
@@ -84,25 +85,26 @@ export default async function MatchControlPage({ params, searchParams }: PagePro
     console.warn('Error al consultar partido en Supabase:', err);
   }
 
-  if (!matchData && (matchId === 'm1' || matchId === 'm2')) {
+  if (!matchData && (DEMO_MATCH_IDS as readonly string[]).includes(matchId)) {
+    const isLive = matchId === DEMO_MATCH_IDS[0];
     matchData = {
       id: matchId,
-      tournament_id: 'tour-1',
-      home_team_id: 't1',
-      away_team_id: 't2',
-      venue_id: 'v1',
+      tournament_id: DEMO_TOURNAMENT_ID,
+      home_team_id: '33333333-3333-4333-8333-333333333331',
+      away_team_id: '33333333-3333-4333-8333-333333333332',
+      venue_id: DEMO_VENUE_ID,
       date_time: new Date(Date.now() + 86400000).toISOString(),
       referee_id: null,
-      status: matchId === 'm1' ? 'playing' : 'scheduled',
-      home_score: matchId === 'm1' ? 2 : 0,
-      away_score: matchId === 'm1' ? 1 : 0,
+      status: isLive ? 'playing' : 'scheduled',
+      home_score: isLive ? 2 : 0,
+      away_score: isLive ? 1 : 0,
       round: 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      home_team: { id: 't1', name: 'Real Unidad Vecinal 3', logo_url: null },
-      away_team: { id: 't2', name: 'Deportivo Block 5 FC', logo_url: null },
-      venue: { id: 'v1', name: 'Cancha Sintética Principal' },
-      tournament: { id: 'tour-1', name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol', status: 'active' },
+      home_team: { id: '33333333-3333-4333-8333-333333333331', name: 'Real Unidad Vecinal 3', logo_url: null },
+      away_team: { id: '33333333-3333-4333-8333-333333333332', name: 'Deportivo Block 5 FC', logo_url: null },
+      venue: { id: DEMO_VENUE_ID, name: 'Cancha Sintética Principal' },
+      tournament: { id: DEMO_TOURNAMENT_ID, name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol', status: 'active' },
       referee: null,
     };
   }
@@ -114,8 +116,8 @@ export default async function MatchControlPage({ params, searchParams }: PagePro
   };
 
   const venues = (venuesData ?? [
-    { id: 'v1', name: 'Cancha Sintética Principal' },
-    { id: 'v2', name: 'Losa Deportiva Sector A' },
+    { id: DEMO_VENUE_ID, name: 'Cancha Sintética Principal' },
+    { id: '44444444-4444-4444-8444-444444444445', name: 'Losa Deportiva Sector A' },
   ]) as Pick<Venue, 'id' | 'name'>[];
 
   const statusDisplay = STATUS_DISPLAY[match.status];

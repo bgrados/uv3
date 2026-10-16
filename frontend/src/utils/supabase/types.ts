@@ -6,8 +6,17 @@ type AuthArgs = {
   options?: {
     data?: Record<string, string>;
     redirectTo?: string;
+    emailRedirectTo?: string;
   };
 };
+
+export type EmailOtpType =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change'
+  | 'email';
 
 export interface UV3SupabaseUser {
   id: string;
@@ -25,6 +34,11 @@ export interface UV3SupabaseAuthClient {
   signOut(): Promise<{ error: { message: string } | null }>;
   resetPasswordForEmail(email: string, options: { redirectTo: string }): Promise<{ error: { message: string } | null }>;
   updateUser(args: { password: string }): Promise<{ error: { message: string } | null }>;
+  exchangeCodeForSession(code: string): Promise<{ error: { message: string } | null }>;
+  verifyOtp(args: {
+    type: EmailOtpType;
+    token_hash: string;
+  }): Promise<{ error: { message: string } | null }>;
 }
 
 export type UV3SupabaseClient = Omit<SupabaseClient, 'auth'> & {

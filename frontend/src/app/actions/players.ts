@@ -2,8 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
+import { getCurrentUser } from '@/app/auth/actions';
 import { playerSchema } from './schemas';
 import type { ActionResponse, Player } from '@/types';
+
+/** Roles que pueden administrar jugadores (RLS lo restringe además al delegado dueño). */
+const MANAGER_ROLES = ['admin', 'organizer', 'delegate'];
 
 const NO_SUPABASE = { success: false, error: 'El sistema no está configurado aún. Contacta al administrador.' } as const;
 
@@ -40,6 +44,12 @@ export async function getPlayerByIdAction(id: string): Promise<ActionResponse<Pl
 export async function createPlayerAction(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!MANAGER_ROLES.includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para registrar jugadores.' };
+  }
 
   const raw = {
     first_name: formData.get('first_name') as string,
@@ -78,6 +88,12 @@ export async function updatePlayerAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!MANAGER_ROLES.includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para editar jugadores.' };
+  }
+
   const raw = {
     first_name: formData.get('first_name') as string,
     last_name: formData.get('last_name') as string,
@@ -109,6 +125,12 @@ export async function deletePlayerAction(id: string, teamId: string): Promise<Ac
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!MANAGER_ROLES.includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para eliminar jugadores.' };
+  }
+
   const { error } = await supabase.from('players').delete().eq('id', id);
 
   if (error) return { success: false, error: error.message };
@@ -122,6 +144,12 @@ export async function uploadPlayerPhotoAction(
 ): Promise<ActionResponse<string>> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!MANAGER_ROLES.includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para subir fotos.' };
+  }
 
   const file = formData.get('file') as File;
 

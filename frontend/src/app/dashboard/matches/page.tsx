@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/app/auth/actions';
 import { createClient } from '@/utils/supabase/server';
 import { SportBadge } from '@/components/SportBadge';
+import { DEMO_MATCH_IDS, DEMO_TOURNAMENT_ID } from '@/utils/demo';
 import type { Match, Tournament } from '@/types';
 
 const STATUS_BADGE: Record<Match['status'], { label: string; className: string }> = {
@@ -54,19 +55,22 @@ export default async function MatchesAdminPage() {
 
   if (tournaments.length === 0) {
     tournaments = [
-      { id: 'tour-1', name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol', status: 'active' },
-      { id: 'tour-2', name: 'Copa Nocturna de Fútbol Sala UV3', sport: 'futbol_sala', status: 'draft' },
+      { id: DEMO_TOURNAMENT_ID, name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol', status: 'active' },
+      { id: '11111111-1111-4111-8111-111111111112', name: 'Copa Nocturna de Fútbol Sala UV3', sport: 'futbol_sala', status: 'draft' },
     ];
   }
 
   if (matches.length === 0) {
+    const venue = { id: '44444444-4444-4444-8444-444444444444', name: 'Cancha Sintética Principal', location: '', description: '', created_at: '', updated_at: '' };
+    const tournament = { id: DEMO_TOURNAMENT_ID, name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol' as const };
+
     matches = [
       {
-        id: 'm1',
-        tournament_id: 'tour-1',
-        home_team_id: 't1',
-        away_team_id: 't2',
-        venue_id: 'v1',
+        id: DEMO_MATCH_IDS[0],
+        tournament_id: DEMO_TOURNAMENT_ID,
+        home_team_id: '33333333-3333-4333-8333-333333333331',
+        away_team_id: '33333333-3333-4333-8333-333333333332',
+        venue_id: venue.id,
         date_time: new Date(Date.now() + 86400000).toISOString(),
         referee_id: null,
         status: 'playing',
@@ -75,17 +79,17 @@ export default async function MatchesAdminPage() {
         round: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        home_team: { id: 't1', name: 'Real Unidad Vecinal 3', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
-        away_team: { id: 't2', name: 'Deportivo Block 5 FC', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
-        venue: { id: 'v1', name: 'Cancha Sintética Principal', location: '', description: '', created_at: '', updated_at: '' },
-        tournament: { id: 'tour-1', name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol' },
+        home_team: { id: '33333333-3333-4333-8333-333333333331', name: 'Real Unidad Vecinal 3', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
+        away_team: { id: '33333333-3333-4333-8333-333333333332', name: 'Deportivo Block 5 FC', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
+        venue,
+        tournament,
       },
       {
-        id: 'm2',
-        tournament_id: 'tour-1',
-        home_team_id: 't3',
-        away_team_id: 't4',
-        venue_id: 'v1',
+        id: DEMO_MATCH_IDS[1],
+        tournament_id: DEMO_TOURNAMENT_ID,
+        home_team_id: '33333333-3333-4333-8333-333333333333',
+        away_team_id: '33333333-3333-4333-8333-333333333334',
+        venue_id: venue.id,
         date_time: new Date(Date.now() + 172800000).toISOString(),
         referee_id: null,
         status: 'scheduled',
@@ -94,10 +98,10 @@ export default async function MatchesAdminPage() {
         round: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        home_team: { id: 't3', name: 'Juventud Sector A', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
-        away_team: { id: 't4', name: 'Defensor Block 12', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
-        venue: { id: 'v1', name: 'Cancha Sintética Principal', location: '', description: '', created_at: '', updated_at: '' },
-        tournament: { id: 'tour-1', name: 'Campeonato Apertura Inter-Bloques 2026', sport: 'futbol' },
+        home_team: { id: '33333333-3333-4333-8333-333333333333', name: 'Juventud Sector A', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
+        away_team: { id: '33333333-3333-4333-8333-333333333334', name: 'Defensor Block 12', logo_url: null, delegate_id: null, created_at: '', updated_at: '' },
+        venue,
+        tournament,
       },
     ];
   }

@@ -263,6 +263,7 @@ export default async function HomePage() {
             <Link href="/" className="text-uv3-green border-b-2 border-uv3-green pb-1">Portada</Link>
             <Link href="/announcements" className="hover:text-uv3-green transition-colors pb-1">Noticias Vecinales</Link>
             <Link href="/tournaments" className="hover:text-uv3-green transition-colors pb-1">Campeonatos</Link>
+            <Link href="/teams" className="hover:text-uv3-green transition-colors pb-1">Equipos</Link>
             <Link href="/gallery" className="hover:text-uv3-green transition-colors pb-1">Galería de Fotos</Link>
             <a 
               href="https://www.facebook.com/profile.php?id=61564444126122" 
@@ -639,6 +640,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/85">
             <Link href="/announcements" className="hover:text-uv3-gold transition-colors">Comunicados</Link>
             <Link href="/tournaments" className="hover:text-uv3-gold transition-colors">Deportes</Link>
+            <Link href="/teams" className="hover:text-uv3-gold transition-colors">Equipos</Link>
             <Link href="/gallery" className="hover:text-uv3-gold transition-colors">Galería</Link>
             <a 
               href="https://www.facebook.com/profile.php?id=61564444126122" 

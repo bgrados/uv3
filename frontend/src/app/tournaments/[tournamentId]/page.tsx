@@ -67,6 +67,42 @@ export default async function TournamentDetailPage({ params }: PageProps) {
   const matches = (matchesData ?? []) as Match[];
   const standings = (standingsData ?? []) as Standing[];
 
+  // Goleadores: agrega los goles de la tabla `goals` para los partidos del torneo.
+  const matchIds = matches.map((m) => m.id);
+  let topScorers: { playerId: string; name: string; team: string | null; goals: number }[] = [];
+  if (matchIds.length > 0) {
+    const { data: goalsData } = await supabase
+      .from('goals')
+      .select('player_id, player:players(id, first_name, last_name), team:teams(id, name)')
+      .in('match_id', matchIds);
+
+    const tally = new Map<string, { name: string; team: string | null; goals: number }>();
+    for (const goal of (goalsData ?? []) as Array<{
+      player_id: string;
+      player?: { first_name?: string | null; last_name?: string | null } | null;
+      team?: { name?: string | null } | null;
+    }>) {
+      const name = goal.player
+        ? `${goal.player.first_name ?? ''} ${goal.player.last_name ?? ''}`.trim()
+        : 'Jugador';
+      const existing = tally.get(goal.player_id);
+      if (existing) {
+        existing.goals += 1;
+      } else {
+        tally.set(goal.player_id, {
+          name: name || 'Jugador',
+          team: goal.team?.name ?? null,
+          goals: 1,
+        });
+      }
+    }
+
+    topScorers = [...tally.entries()]
+      .map(([playerId, value]) => ({ playerId, ...value }))
+      .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
+      .slice(0, 5);
+  }
+
   // Group matches by round
   const rounds = matches.reduce<Record<number, Match[]>>((acc, m) => {
     if (!acc[m.round]) acc[m.round] = [];
@@ -269,7 +305,37 @@ export default async function TournamentDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Top Scorers placeholder */}
+            {/* Top Scorers */}
+            {topScorers.length > 0 && (
+              <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between bg-uv3-gold px-5 py-4 text-uv3-green-dark">
+                  <h2 className="font-bold">⚽ Goleadores</h2>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">
+                    Top {topScorers.length}
+                  </span>
+                </div>
+                <ol className="divide-y divide-stone-100">
+                  {topScorers.map((scorer, idx) => (
+                    <li
+                      key={scorer.playerId}
+                      className="flex items-center gap-3 px-5 py-3 text-sm"
+                    >
+                      <span className="w-4 text-center font-black text-stone-400">{idx + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-stone-800">{scorer.name}</p>
+                        {scorer.team && (
+                          <p className="truncate text-xs text-stone-500">{scorer.team}</p>
+                        )}
+                      </div>
+                      <span className="rounded-full bg-uv3-green/10 px-2.5 py-0.5 text-xs font-black text-uv3-green-dark">
+                        {scorer.goals} {scorer.goals === 1 ? 'gol' : 'goles'}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
             {hasLive && (
               <div className="rounded-xl border border-red-200 bg-red-50 p-4">
                 <p className="flex items-center gap-2 text-xs font-bold text-red-700">

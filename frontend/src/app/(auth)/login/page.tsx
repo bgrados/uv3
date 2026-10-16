@@ -41,7 +41,7 @@ function LoginForm() {
         {redirectTo ? <input type="hidden" name="redirectTo" value={redirectTo} /> : null}
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-            Correo del administrador
+            Correo electrónico
           </label>
           <input
             id="email"
@@ -86,7 +86,13 @@ function LoginForm() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        Si necesitas una cuenta nueva, usa el registro general del sistema.
+        ¿No tienes cuenta?{' '}
+        <Link
+          href="/register"
+          className="font-medium text-uv3-green transition-colors hover:text-uv3-green-dark"
+        >
+          Regístrate
+        </Link>
       </p>
     </>
   );

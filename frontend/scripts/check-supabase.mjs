@@ -41,26 +41,30 @@ const fileEnv = parseEnvFile(envPath);
 const env = { ...fileEnv, ...process.env };
 
 const url = (env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
-const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
-const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const key = serviceKey || anonKey;
+const serviceKey = (env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const anonKey = (env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-const PLACEHOLDERS = ['your-project', 'your-anon-key', 'placeholder'];
+const PLACEHOLDERS = ['your-project', 'your-anon-key', 'your-service-key', 'placeholder'];
 
 function isPlaceholder(value) {
   if (!value) return true;
+  if (value.length < 40) return true;
   return PLACEHOLDERS.some((p) => value.includes(p));
 }
 
-if (isPlaceholder(url) || isPlaceholder(key) || key.length < 40) {
+const hasServiceKey = !isPlaceholder(serviceKey);
+const hasAnonKey = !isPlaceholder(anonKey);
+const key = hasServiceKey ? serviceKey : anonKey;
+
+if (isPlaceholder(url) || !key) {
   console.log('[check-supabase] Las claves en .env.local siguen siendo placeholders.');
-  console.log('                 Ejecuta: npx vercel login && npx vercel env pull .env.local');
+  console.log('                 Pega NEXT_PUBLIC_SUPABASE_ANON_KEY (y opcionalmente SUPABASE_SERVICE_ROLE_KEY).');
   process.exit(2);
 }
 
 console.log(`[check-supabase] Proyecto: ${url}`);
 console.log(
-  `[check-supabase] Clave usada: ${serviceKey ? 'service_role' : 'anon (los buckets pueden no listarse)'}`
+  `[check-supabase] Clave usada: ${hasServiceKey ? 'service_role' : 'anon'}`
 );
 console.log('');
 
@@ -110,23 +114,85 @@ for (const table of TABLES) {
 console.log('');
 console.log('== Columnas requeridas por el frontend ==');
 const columnChecks = [
+  ['users', 'full_name'],
+  ['users', 'username'],
+  ['users', 'role'],
+  ['users', 'email'],
+  ['venues', 'name'],
+  ['venues', 'location'],
+  ['teams', 'logo_url'],
+  ['teams', 'delegate_id'],
+  ['players', 'team_id'],
+  ['players', 'first_name'],
+  ['players', 'last_name'],
+  ['players', 'dni'],
+  ['players', 'birth_date'],
+  ['players', 'jersey_number'],
+  ['players', 'position'],
+  ['players', 'photo_url'],
   ['tournaments', 'sport'],
+  ['tournaments', 'format'],
+  ['tournaments', 'status'],
+  ['tournaments', 'description'],
+  ['tournaments', 'start_date'],
+  ['tournaments', 'end_date'],
+  ['matches', 'tournament_id'],
+  ['matches', 'home_team_id'],
+  ['matches', 'away_team_id'],
+  ['matches', 'venue_id'],
+  ['matches', 'referee_id'],
+  ['matches', 'date_time'],
+  ['matches', 'status'],
+  ['matches', 'home_score'],
+  ['matches', 'away_score'],
+  ['matches', 'round'],
+  ['standings', 'tournament_id'],
+  ['standings', 'team_id'],
+  ['standings', 'points'],
+  ['standings', 'goal_difference'],
+  ['goals', 'match_id'],
+  ['goals', 'player_id'],
+  ['goals', 'team_id'],
+  ['goals', 'minute'],
+  ['sanctions', 'match_id'],
+  ['sanctions', 'player_id'],
+  ['schedules', 'tournament_id'],
+  ['announcements', 'title'],
+  ['announcements', 'category'],
+  ['galleries', 'title'],
   ['galleries', 'images'],
 ];
+let columnsOk = 0;
 for (const [table, column] of columnChecks) {
   const res = await fetch(`${url}/rest/v1/${table}?select=${column}&limit=1`, { headers });
   if (res.ok) {
-    console.log(`  OK    ${table}.${column}`);
+    columnsOk += 1;
   } else {
     failures += 1;
     console.log(`  FALTA ${table}.${column} (status ${res.status})`);
   }
 }
+console.log(`  ${columnsOk}/${columnChecks.length} columnas presentes`);
 
 console.log('');
 console.log('== Buckets de Storage ==');
-if (!serviceKey) {
-  console.log('  (omitido: se requiere SUPABASE_SERVICE_ROLE_KEY para listar buckets)');
+if (!hasServiceKey) {
+  // Sin service_role no se puede listar buckets: se sondea el endpoint público
+  // de objetos. Si el bucket no existe, Storage responde "Bucket not found".
+  for (const bucket of BUCKETS) {
+    const res = await fetch(`${url}/storage/v1/object/public/${bucket}/__uv3_probe__`, {
+      headers,
+    });
+    const body = await res.text();
+    const missing = /bucket not found/i.test(body);
+    if (missing) {
+      failures += 1;
+      console.log(`  FALTA ${bucket}`);
+    } else {
+      console.log(`  OK    ${bucket} (sondeo público)`);
+    }
+  }
+  console.log('  (sin SUPABASE_SERVICE_ROLE_KEY; comprobación aproximada)');
 } else {
   const res = await fetch(`${url}/storage/v1/bucket`, { headers });
   if (!res.ok) {

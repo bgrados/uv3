@@ -5,7 +5,10 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from './config'
 
 const STAFF_ROLES = ['admin', 'organizer', 'referee'];
 const DASHBOARD_PREFIX = '/dashboard';
-const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
+// Rutas que redirigen al panel si el usuario ya tiene sesión de staff.
+// `/reset-password` queda fuera a propósito: se accede tras el enlace de
+// recuperación con una sesión de recuperación válida, y debe poder mostrarse.
+const AUTH_PATHS = ['/login', '/register', '/forgot-password'];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

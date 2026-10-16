@@ -72,6 +72,12 @@ export async function updateTeamAction(id: string, formData: FormData): Promise<
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para editar equipos.' };
+  }
+
   const raw = {
     name: formData.get('name') as string,
     delegate_id: (formData.get('delegate_id') as string) || null,
@@ -116,6 +122,12 @@ export async function deleteTeamAction(id: string): Promise<ActionResponse> {
 export async function uploadTeamLogoAction(formData: FormData): Promise<ActionResponse<string>> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para subir escudos.' };
+  }
 
   const file = formData.get('file') as File;
 

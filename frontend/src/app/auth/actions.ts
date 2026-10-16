@@ -8,6 +8,19 @@ import { isSupabaseConfigured } from '@/utils/supabase/config';
 import type { ActionResponse, User, UserRole } from '@/types';
 import { isStaffRole } from '@/utils/roles';
 
+/**
+ * URL base del sitio. Se usa `NEXT_PUBLIC_SITE_URL` cuando está definida y, si
+ * no, se deduce del host de la petición (útil en previews de Vercel y local).
+ */
+async function getSiteUrl(): Promise<string> {
+  const headerList = await headers();
+  const forwardedProto = headerList.get('x-forwarded-proto') ?? 'http';
+  const host = headerList.get('host') ?? 'localhost:3000';
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${forwardedProto}://${host}`
+  );
+}
+
 export async function loginAction(formData: FormData): Promise<ActionResponse> {
   const email = (formData.get('email') as string)?.trim().toLowerCase();
   const password = formData.get('password') as string;
@@ -77,6 +90,11 @@ export async function signupAction(formData: FormData): Promise<ActionResponse> 
     return { success: false, error: 'La contrasena debe tener al menos 6 caracteres.' };
   }
 
+  const siteUrl = await getSiteUrl();
+  const nextAfterConfirm = `/login?message=${encodeURIComponent(
+    'Correo confirmado. Ya puedes iniciar sesión.'
+  )}`;
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -85,6 +103,7 @@ export async function signupAction(formData: FormData): Promise<ActionResponse> 
         full_name: fullName,
         username,
       },
+      emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(nextAfterConfirm)}`,
     },
   });
 
@@ -120,13 +139,10 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
     return { success: false, error: 'El correo electronico es requerido.' };
   }
 
-  const headerList = await headers();
-  const forwardedProto = headerList.get('x-forwarded-proto') ?? 'http';
-  const host = headerList.get('host') ?? 'localhost:3000';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || `${forwardedProto}://${host}`;
+  const siteUrl = await getSiteUrl();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/reset-password`,
+    redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent('/reset-password')}`,
   });
 
   if (error) {
@@ -142,6 +158,20 @@ export async function resetPasswordAction(formData: FormData): Promise<ActionRes
   }
 
   const supabase = await createClient();
+
+  // El cambio de contraseña exige la sesión de recuperación que crea el enlace
+  // del correo (ver /auth/callback).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error:
+        'El enlace de recuperación no es válido o expiró. Solicita uno nuevo desde "¿Olvidaste tu clave?".',
+    };
+  }
 
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirm_password') as string;

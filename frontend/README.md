@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UV3 Platform — Frontend
 
-## Getting Started
+Aplicación **Next.js 15 (App Router) + React 19 + TypeScript + Tailwind CSS v4** del
+portal comunitario y de gestión deportiva de la **Unidad Vecinal 3**. Supabase actúa
+como backend completo (Auth, PostgreSQL con RLS y Storage).
 
-First, run the development server:
+## Requisitos
+
+- Node.js **22.x** (ver `package.json` → `engines` y `.nvmrc`).
+- Un proyecto de Supabase con los scripts de `../database` aplicados.
+
+## Puesta en marcha
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # completa las claves reales
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Variables de entorno (`.env.local`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Requerida | Descripción |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Sí | URL del proyecto Supabase. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sí | Clave pública (anon/publishable). |
+| `NEXT_PUBLIC_SITE_URL` | Sí | URL pública del sitio (se usa en enlaces de correo). |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Solo tareas administrativas. No exponer. |
+| `DATABASE_URL` | No | Conexión directa a PostgreSQL. |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | Descripción |
+| :--- | :--- |
+| `npm run dev` | Servidor de desarrollo (Turbopack). |
+| `npm run build` | Compilación de producción. |
+| `npm run start` | Sirve la build de producción. |
+| `npm run lint` | ESLint. |
+| `npm run check:db` | Verifica la conexión y los objetos de Supabase. |
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+src/
+├── app/
+│   ├── (auth)/          # login, register, forgot-password, reset-password
+│   ├── auth/
+│   │   ├── actions.ts   # Server Actions de autenticación
+│   │   └── callback/    # Intercambio de código (confirmación / recuperación)
+│   ├── actions/         # Server Actions: torneos, fixtures, equipos, jugadores
+│   ├── announcements/   # Comunicados vecinales
+│   ├── dashboard/       # Panel administrativo (staff) y control de partidos
+│   ├── gallery/         # Galería fotográfica
+│   ├── teams/           # Directorio público de equipos y plantillas
+│   ├── tournaments/     # Vistas públicas de torneos, fixture y posiciones
+│   └── page.tsx         # Portada comunitaria
+├── components/          # Componentes reutilizables (marcador en vivo, badges…)
+├── types/               # Tipos TypeScript compartidos
+└── utils/               # Motor de fixtures, clientes Supabase, roles
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Autenticación y roles
 
-## Deploy on Vercel
+- **Panel `/dashboard`:** solo `admin`, `organizer` y `referee`.
+- Los roles `delegate` (delegado de equipo) y `user` (vecino) no acceden al panel;
+  las políticas RLS permiten al delegado administrar su equipo vía API.
+- El flujo de recuperación de contraseña y la confirmación de correo pasan por
+  `/auth/callback`, que intercambia el código por una sesión.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## No puedo entrar al panel (diagnóstico)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Antes de tocar código, comprueba el estado real con:
+
+```bash
+npm run check:db          # tablas, columnas y buckets
+node scripts/smoke-auth.mjs                    # login admin@uv3.com / password123
+node scripts/smoke-auth.mjs tu-correo tu-clave # login de tu cuenta real
+```
+
+Síntomas frecuentes y su causa:
+
+| Síntoma | Causa | Solución |
+| :--- | :--- | :--- |
+| Login responde `500 Database error querying schema` | Cuentas demo con `auth.users`/`auth.identities` rotos | Ejecutar `../database/fix_all_admin_access.sql` |
+| `check:db` avisa `FALTA tournaments.sport` y el panel da error 400 | Falta la columna `sport` | Mismo script |
+| `FALTA team-logos / player-photos / tournament-banners` | Faltan los buckets de Storage | Mismo script |
+| Login dice "Tu cuenta no tiene permisos para el panel" | Tu cuenta tiene rol `user` | Mismo script (promueve tu correo a `admin`) |
+
+`../database/fix_all_admin_access.sql` es idempotente y se pega una sola vez en
+el **SQL Editor de Supabase**. Si no recuerdas tu contraseña, usa antes
+"¿Olvidaste tu clave?" en `/login`.
+
+## Despliegue
+
+Desplegado en Vercel. Configura las mismas variables de entorno en el proyecto y
+aplica los scripts de `../database` en Supabase antes del primer uso.
+
+Ver documentación completa en [`../docs/PROJECT_DOCUMENTATION.md`](../docs/PROJECT_DOCUMENTATION.md).

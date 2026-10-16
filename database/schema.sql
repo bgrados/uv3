@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS public.tournaments (
     description TEXT,
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'finished')),
     format TEXT NOT NULL DEFAULT 'liga' CHECK (format IN ('liga', 'grupos', 'eliminacion')),
+    sport TEXT NOT NULL DEFAULT 'futbol' CHECK (sport IN ('futbol', 'futbol_sala', 'basquet')),
     category TEXT NOT NULL DEFAULT 'libre',
     banner_url TEXT,
     start_date DATE,
@@ -175,6 +176,9 @@ CREATE INDEX IF NOT EXISTS idx_teams_delegate_id ON public.teams(delegate_id);
 CREATE INDEX IF NOT EXISTS idx_players_team_id ON public.players(team_id);
 CREATE INDEX IF NOT EXISTS idx_players_dni ON public.players(dni);
 
+CREATE INDEX IF NOT EXISTS idx_tournaments_sport ON public.tournaments(sport);
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON public.tournaments(status);
+
 CREATE INDEX IF NOT EXISTS idx_matches_tournament_id ON public.matches(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_matches_teams ON public.matches(home_team_id, away_team_id);
 CREATE INDEX IF NOT EXISTS idx_matches_date_time ON public.matches(date_time);
@@ -230,17 +234,30 @@ DROP TRIGGER IF EXISTS update_galleries_timestamp ON public.galleries;
 CREATE TRIGGER update_galleries_timestamp BEFORE UPDATE ON public.galleries FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
 
 -- Supabase auth.users to public.users synchronization trigger
+-- SEGURIDAD: el rol SIEMPRE es 'user' y nunca se toma de los metadatos del
+-- cliente (raw_user_meta_data), que son manipulables en el registro público.
+-- Los roles de staff se asignan sólo desde el SQL Editor o desde un módulo de
+-- administración con service_role.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.users (id, email, full_name, username, role)
-    VALUES (
-        new.id,
-        new.email,
-        COALESCE(new.raw_user_meta_data->>'full_name', ''),
-        COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
-        COALESCE(new.raw_user_meta_data->>'role', 'user')
-    );
+    BEGIN
+        INSERT INTO public.users (id, email, full_name, username, role)
+        VALUES (
+            new.id,
+            new.email,
+            COALESCE(new.raw_user_meta_data->>'full_name', ''),
+            COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+            'user'
+        );
+    EXCEPTION WHEN unique_violation THEN
+        -- Username duplicado (p. ej. dos registros con el mismo prefijo de
+        -- correo): se usa el correo completo, que es único. Evita que el
+        -- registro falle con error 500.
+        INSERT INTO public.users (id, email, full_name, username, role)
+        VALUES (new.id, new.email, '', new.email, 'user')
+        ON CONFLICT (id) DO NOTHING;
+    END;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

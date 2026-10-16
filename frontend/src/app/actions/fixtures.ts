@@ -131,6 +131,12 @@ export async function updateMatchScoreAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'referee'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para actualizar el marcador.' };
+  }
+
   const raw = {
     match_id: formData.get('match_id') as string,
     home_score: formData.get('home_score') as string,

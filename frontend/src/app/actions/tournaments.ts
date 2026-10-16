@@ -83,6 +83,12 @@ export async function updateTournamentAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para editar torneos.' };
+  }
+
   const raw = {
     name: formData.get('name') as string,
     description: (formData.get('description') as string) || null,
@@ -139,12 +145,18 @@ export async function registerTeamInTournamentAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para inscribir equipos.' };
+  }
+
   const { data: existing } = await supabase
     .from('standings')
     .select('id')
     .eq('tournament_id', tournamentId)
     .eq('team_id', teamId)
-    .single();
+    .maybeSingle();
 
   if (existing) return { success: false, error: 'El equipo ya está inscrito en este torneo.' };
 
@@ -195,6 +207,12 @@ export async function uploadTournamentBannerAction(
 ): Promise<ActionResponse<string>> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para subir banners.' };
+  }
 
   const file = formData.get('file') as File;
 
