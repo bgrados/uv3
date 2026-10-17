@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getCurrentUser } from '@/app/auth/actions';
 import { ASSIGNABLE_ROLES } from './schemas';
 import type { ActionResponse, User, UserRole } from '@/types';
@@ -63,5 +63,99 @@ export async function updateUserRoleAction(userId: string, role: string): Promis
 
   revalidatePath('/dashboard/usuarios');
   revalidatePath('/dashboard/teams');
+  return { success: true };
+}
+
+/** Crea un nuevo delegado (cuenta + rol) desde el panel. */
+export async function createDelegateAction(formData: FormData): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para crear usuarios.' };
+
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+  const teamId = String(formData.get('team_id') ?? '').trim();
+
+  if (!fullName || !email || !password) {
+    return { success: false, error: 'Nombre, email y contraseña son requeridos.' };
+  }
+  if (password.length < 6) {
+    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  const adminAuth = adminClient.auth as unknown as { admin: { createUser: (opts: Record<string, unknown>) => Promise<{ data: { user: { id: string } | null }; error: { message: string } | null }> } };
+  const { data: authData, error: authError } = await adminAuth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, username: email.split('@')[0] },
+  });
+  if (authError || !authData?.user) {
+    return { success: false, error: authError?.message ?? 'No se pudo crear la cuenta.' };
+  }
+
+  const userId = authData.user.id;
+  const { error: profileError } = await adminClient
+    .from('users')
+    .update({ full_name: fullName, role: 'delegate', username: email.split('@')[0] })
+    .eq('id', userId);
+  if (profileError) {
+    return { success: false, error: profileError.message };
+  }
+
+  if (teamId) {
+    await adminClient.from('teams').update({ delegate_id: userId }).eq('id', teamId);
+  }
+
+  revalidatePath('/dashboard/delegados');
+  revalidatePath('/dashboard/teams');
+  revalidatePath('/dashboard/usuarios');
+  return { success: true };
+}
+
+/** Crea un nuevo árbitro (cuenta + rol) desde el panel. */
+export async function createRefereeAction(formData: FormData): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para crear usuarios.' };
+
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+
+  if (!fullName || !email || !password) {
+    return { success: false, error: 'Nombre, email y contraseña son requeridos.' };
+  }
+  if (password.length < 6) {
+    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  const adminAuth = adminClient.auth as unknown as { admin: { createUser: (opts: Record<string, unknown>) => Promise<{ data: { user: { id: string } | null }; error: { message: string } | null }> } };
+  const { data: authData, error: authError } = await adminAuth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, username: email.split('@')[0] },
+  });
+  if (authError || !authData?.user) {
+    return { success: false, error: authError?.message ?? 'No se pudo crear la cuenta.' };
+  }
+
+  const userId = authData.user.id;
+  const { error: profileError } = await adminClient
+    .from('users')
+    .update({ full_name: fullName, role: 'referee', username: email.split('@')[0] })
+    .eq('id', userId);
+  if (profileError) {
+    return { success: false, error: profileError.message };
+  }
+
+  revalidatePath('/dashboard/arbitros');
+  revalidatePath('/dashboard/usuarios');
   return { success: true };
 }

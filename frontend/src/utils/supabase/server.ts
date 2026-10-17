@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import type { UV3SupabaseClient } from './types';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
 export async function createClient(): Promise<UV3SupabaseClient> {
   const cookieStore = await cookies();
 
@@ -27,4 +29,15 @@ export async function createClient(): Promise<UV3SupabaseClient> {
       },
     }
   ) as unknown as UV3SupabaseClient;
+}
+
+/** Cliente con service role para tareas administrativas (crear usuarios). Solo usar en server. */
+export function createAdminClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey || serviceKey === 'your-service-key' || serviceKey.length < 40) {
+    return null;
+  }
+  return createSupabaseClient(SUPABASE_URL, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
