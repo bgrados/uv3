@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getSpacesAction } from '@/app/actions/spaces';
 import { getSiteSettingsAction } from '@/app/actions/settings';
 import { ReservasClient } from './ReservasClient';
@@ -15,6 +16,7 @@ export default async function ReservasPage() {
 
   return (
     <main className="min-h-screen bg-uv3-bg pb-16">
+      <Breadcrumbs items={[{ label: 'Reservar cancha' }]} />
       <div className="bg-uv3-green-dark text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div>

@@ -41,18 +41,26 @@ export default async function TeamsAdminPage({ searchParams }: PageProps) {
   let delegates: Pick<User, 'id' | 'full_name' | 'email'>[] = [];
 
   const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: profile } = auth.user ? await supabase.from('users').select('id, role').eq('id', auth.user.id).maybeSingle() : { data: null };
+  const isDelegate = profile?.role === 'delegate';
+  const currentUserId = auth.user?.id ?? null;
 
-  const [teamsResult, delegatesResult] = await Promise.all([
-    supabase
-      .from('teams')
-      .select('id, name, logo_url, delegate_id, delegate:users!delegate_id(id, full_name, email), players(count)')
-      .order('name'),
-    supabase
-      .from('users')
-      .select('id, full_name, email')
-      .eq('role', 'delegate')
-      .order('full_name'),
-  ]);
+  let teamsQuery = supabase
+    .from('teams')
+    .select('id, name, logo_url, delegate_id, delegate:users!delegate_id(id, full_name, email), players(count)')
+    .order('name');
+  if (isDelegate && currentUserId) {
+    teamsQuery = teamsQuery.eq('delegate_id', currentUserId);
+  }
+
+  const delegatesQuery = supabase
+    .from('users')
+    .select('id, full_name, email')
+    .eq('role', 'delegate')
+    .order('full_name');
+
+  const [teamsResult, delegatesResult] = await Promise.all([teamsQuery, delegatesQuery]);
 
   if (!teamsResult.error && teamsResult.data) {
     teams = teamsResult.data as unknown as TeamRow[];
@@ -83,54 +91,56 @@ export default async function TeamsAdminPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <form action={createTeamFormAction} className="h-fit rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-uv3-green-dark">Nuevo equipo</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            El nombre debe ser único dentro de la plataforma.
-          </p>
+      <section className={`grid gap-6 ${isDelegate ? '' : 'lg:grid-cols-[0.9fr_1.1fr]'}`}>
+        {!isDelegate && (
+          <form action={createTeamFormAction} className="h-fit rounded-xl border bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-uv3-green-dark">Nuevo equipo</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              El nombre debe ser único dentro de la plataforma.
+            </p>
 
-          <div className="mt-5 grid gap-4">
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-gray-700">Nombre del equipo</span>
-              <input
-                name="name"
-                required
-                minLength={3}
-                placeholder="Deportivo Block 7"
-                className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green"
-              />
-            </label>
+            <div className="mt-5 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-gray-700">Nombre del equipo</span>
+                <input
+                  name="name"
+                  required
+                  minLength={3}
+                  placeholder="Deportivo Block 7"
+                  className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green"
+                />
+              </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-gray-700">Delegado (opcional)</span>
-              <select
-                name="delegate_id"
-                defaultValue=""
-                className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green"
-              >
-                <option value="">Sin delegado asignado</option>
-                {delegates.map((delegate) => (
-                  <option key={delegate.id} value={delegate.id}>
-                    {delegate.full_name || delegate.email}
-                  </option>
-                ))}
-              </select>
-              {delegates.length === 0 && (
-                <span className="text-xs text-gray-500">
-                  Aún no hay usuarios con rol de delegado registrados.
-                </span>
-              )}
-            </label>
-          </div>
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-gray-700">Delegado (opcional)</span>
+                <select
+                  name="delegate_id"
+                  defaultValue=""
+                  className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green"
+                >
+                  <option value="">Sin delegado asignado</option>
+                  {delegates.map((delegate) => (
+                    <option key={delegate.id} value={delegate.id}>
+                      {delegate.full_name || delegate.email}
+                    </option>
+                  ))}
+                </select>
+                {delegates.length === 0 && (
+                  <span className="text-xs text-gray-500">
+                    Aún no hay usuarios con rol de delegado registrados.
+                  </span>
+                )}
+              </label>
+            </div>
 
-          <button
-            type="submit"
-            className="mt-6 w-full rounded-lg bg-uv3-green-dark px-5 py-2.5 font-semibold text-white transition-colors hover:bg-uv3-green"
-          >
-            Crear equipo
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="mt-6 w-full rounded-lg bg-uv3-green-dark px-5 py-2.5 font-semibold text-white transition-colors hover:bg-uv3-green"
+            >
+              Crear equipo
+            </button>
+          </form>
+        )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -190,14 +200,16 @@ export default async function TeamsAdminPage({ searchParams }: PageProps) {
                       >
                         Gestionar plantilla
                       </Link>
-                      <form action={deleteTeamFormAction}>
-                        <input type="hidden" name="team_id" value={team.id} />
-                        <ConfirmSubmitButton
-                          label="Eliminar"
-                          pendingLabel="Eliminando..."
-                          confirmMessage={`¿Eliminar el equipo "${team.name}"? También se eliminarán sus jugadores y su inscripción en torneos.`}
-                        />
-                      </form>
+                      {!isDelegate && (
+                        <form action={deleteTeamFormAction}>
+                          <input type="hidden" name="team_id" value={team.id} />
+                          <ConfirmSubmitButton
+                            label="Eliminar"
+                            pendingLabel="Eliminando..."
+                            confirmMessage={`¿Eliminar el equipo "${team.name}"? También se eliminarán sus jugadores y su inscripción en torneos.`}
+                          />
+                        </form>
+                      )}
                     </div>
                   </li>
                 );

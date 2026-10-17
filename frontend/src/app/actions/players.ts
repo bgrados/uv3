@@ -17,6 +17,23 @@ export async function getPlayersByTeamAction(
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para consultar jugadores.' };
+  }
+
+  if (user.role === 'delegate') {
+    const { data: team } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', teamId)
+      .maybeSingle();
+    if (!team || team.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para consultar este equipo.' };
+    }
+  }
+
   const { data, error } = await supabase
     .from('players')
     .select('*')
@@ -31,13 +48,22 @@ export async function getPlayerByIdAction(id: string): Promise<ActionResponse<Pl
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para consultar jugadores.' };
+  }
+
   const { data, error } = await supabase
     .from('players')
-    .select('*, team:teams(id, name, logo_url)')
+    .select('*, team:teams(id, name, logo_url, delegate_id)')
     .eq('id', id)
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (user.role === 'delegate' && (data as { team?: { delegate_id?: string } }).team?.delegate_id !== user.id) {
+    return { success: false, error: 'No tienes permisos para consultar este jugador.' };
+  }
   return { success: true, data: data as Player };
 }
 
@@ -64,6 +90,17 @@ export async function createPlayerAction(formData: FormData): Promise<ActionResp
   const parsed = playerSchema.safeParse(raw);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  if (user.role === 'delegate') {
+    const { data: team } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', parsed.data.team_id)
+      .maybeSingle();
+    if (!team || team.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para registrar jugadores en este equipo.' };
+    }
   }
 
   const photoUrl = formData.get('photo_url') as string | null;
@@ -109,13 +146,47 @@ export async function updatePlayerAction(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
+  let originalTeamId: string | null = null;
+
+  if (user.role === 'delegate') {
+    const { data: existing } = await supabase
+      .from('players')
+      .select('team_id')
+      .eq('id', id)
+      .maybeSingle();
+    const { data: newTeam } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', parsed.data.team_id)
+      .maybeSingle();
+    if (!existing || !newTeam || newTeam.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para editar jugadores de este equipo.' };
+    }
+    const { data: existingTeam } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', existing.team_id)
+      .maybeSingle();
+    if (!existingTeam || existingTeam.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para editar jugadores de este equipo.' };
+    }
+    originalTeamId = existing.team_id;
+  }
+
   const photoUrl = formData.get('photo_url') as string | null;
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (photoUrl) updateData.photo_url = photoUrl;
 
-  const { error } = await supabase.from('players').update(updateData).eq('id', id);
+  let updateQuery = supabase.from('players').update(updateData).eq('id', id);
+  if (user.role === 'delegate' && originalTeamId) {
+    updateQuery = updateQuery.eq('team_id', originalTeamId);
+  }
+  const { data: updatedRows, error } = await updateQuery.select('id');
 
   if (error) return { success: false, error: error.message };
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: 'No tienes permisos para editar jugadores de este equipo.' };
+  }
 
   revalidatePath(`/teams/${parsed.data.team_id}`);
   return { success: true };
@@ -129,6 +200,25 @@ export async function deletePlayerAction(id: string, teamId: string): Promise<Ac
   if (!user) return { success: false, error: 'No autenticado.' };
   if (!MANAGER_ROLES.includes(user.role)) {
     return { success: false, error: 'No tienes permisos para eliminar jugadores.' };
+  }
+
+  if (user.role === 'delegate') {
+    const { data: player } = await supabase
+      .from('players')
+      .select('team_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (!player) {
+      return { success: false, error: 'Jugador no encontrado.' };
+    }
+    const { data: team } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', player.team_id)
+      .maybeSingle();
+    if (!team || team.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para eliminar jugadores de este equipo.' };
+    }
   }
 
   const { error } = await supabase.from('players').delete().eq('id', id);

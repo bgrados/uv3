@@ -40,8 +40,18 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: 'Junta Vecinal',
+    items: [
+      { href: '/dashboard/junta', label: 'Directiva', icon: '🏛️', adminOnly: true },
+      { href: '/dashboard/tesoreria', label: 'Tesorería', icon: '💰', adminOnly: true },
+    ],
+  },
+  {
     title: 'Sistema',
-    items: [{ href: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️', adminOnly: true }],
+    items: [
+      { href: '/dashboard/usuarios', label: 'Usuarios y roles', icon: '👤', adminOnly: true },
+      { href: '/dashboard/configuracion', label: 'Configuración', icon: '⚙️', adminOnly: true },
+    ],
   },
 ];
 
@@ -59,12 +69,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   // Filtra los accesos según el rol del usuario conectado.
-  const groups: DashboardNavGroup[] = NAV_GROUPS.map((g) => ({
+  let groups: DashboardNavGroup[] = NAV_GROUPS.map((g) => ({
     title: g.title,
     items: g.items
       .filter((item) => !item.adminOnly || user.role === 'admin')
       .map(({ href, label, icon }) => ({ href, label, icon })),
   })).filter((g) => g.items.length > 0);
+
+  if (user.role === 'delegate') {
+    groups = [
+      { title: 'Principal', items: [{ href: '/dashboard', label: 'Inicio', icon: '🏠' }] },
+      { title: 'Mi equipo', items: [{ href: '/dashboard/teams', label: 'Mi equipo', icon: '👥' }] },
+    ];
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-100">

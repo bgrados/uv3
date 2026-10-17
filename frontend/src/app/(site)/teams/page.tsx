@@ -1,4 +1,5 @@
 import { SmartImage } from '@/components/SmartImage';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import type { Team } from '@/types';
@@ -23,6 +24,7 @@ export default async function TeamsPage() {
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-12">
+      <Breadcrumbs items={[{ label: 'Equipos' }]} />
       <div className="mb-8">
         <h2 className="text-3xl font-semibold text-uv3-green-dark">Equipos</h2>
         <p className="mt-2 text-sm text-gray-600">

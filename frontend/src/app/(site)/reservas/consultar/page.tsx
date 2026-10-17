@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { cancelReservationAction, lookupReservationAction } from '@/app/actions/reservations';
 
 interface ReservationRow {
@@ -69,6 +70,7 @@ export default function ConsultarReservaPage() {
 
   return (
     <main className="min-h-screen bg-uv3-bg pb-16">
+      <Breadcrumbs items={[{ label: 'Reservar cancha', href: '/reservas' }, { label: 'Mi reserva' }]} />
       <div className="bg-uv3-green-dark text-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <h1 className="font-heading text-xl font-black uppercase tracking-tight">Consultar mi reserva</h1>

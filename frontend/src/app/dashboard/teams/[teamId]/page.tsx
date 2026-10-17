@@ -58,6 +58,12 @@ export default async function TeamDetailPage({ params, searchParams }: PageProps
   );
 
   const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const { data: profile } = auth.user ? await supabase.from('users').select('id, role').eq('id', auth.user.id).maybeSingle() : { data: null };
+  const isDelegate = profile?.role === 'delegate';
+  if (isDelegate && team.delegate_id !== auth.user?.id) {
+    notFound();
+  }
   const { data: delegatesData } = await supabase
     .from('users')
     .select('id, full_name, email')
@@ -118,7 +124,7 @@ export default async function TeamDetailPage({ params, searchParams }: PageProps
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10">
       <nav className="mb-5 flex items-center gap-2 text-sm text-gray-500">
         <Link href="/dashboard/teams" className="hover:text-uv3-green-dark">
-          Equipos
+          {isDelegate ? 'Mi equipo' : 'Equipos'}
         </Link>
         <span>›</span>
         <span className="font-semibold text-uv3-green-dark">{team.name}</span>
@@ -182,17 +188,19 @@ export default async function TeamDetailPage({ params, searchParams }: PageProps
             <input name="name" defaultValue={team.name} required minLength={3} className={inputClass} />
           </label>
 
-          <label className="grid gap-2">
-            <span className="text-sm font-medium text-gray-700">Delegado</span>
-            <select name="delegate_id" defaultValue={team.delegate_id ?? ''} className={inputClass}>
-              <option value="">Sin delegado asignado</option>
-              {delegates.map((delegate) => (
-                <option key={delegate.id} value={delegate.id}>
-                  {delegate.full_name || delegate.email}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!isDelegate && (
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-gray-700">Delegado</span>
+              <select name="delegate_id" defaultValue={team.delegate_id ?? ''} className={inputClass}>
+                <option value="">Sin delegado asignado</option>
+                {delegates.map((delegate) => (
+                  <option key={delegate.id} value={delegate.id}>
+                    {delegate.full_name || delegate.email}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="grid gap-2">
             <span className="text-sm font-medium text-gray-700">Escudo / logo (imagen)</span>

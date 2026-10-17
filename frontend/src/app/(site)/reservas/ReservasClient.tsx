@@ -78,6 +78,7 @@ export function ReservasClient({ spaces, settings }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ code: string; price: number } | null>(null);
+  const [step, setStep] = useState(1);
 
   const selectedSpace = useMemo(() => spaces.find((s) => s.id === spaceId), [spaces, spaceId]);
 
@@ -221,10 +222,31 @@ export function ReservasClient({ spaces, settings }: Props) {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-      <div className="space-y-6">
-        <section>
-          <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-uv3-green-dark">1. Elige el espacio</h2>
+    <div className="space-y-6">
+      {/* Indicador de pasos */}
+      <div className="flex items-center justify-center gap-2">
+        {[1, 2, 3].map((s) => (
+          <div key={s} className="flex items-center gap-2">
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                step >= s ? 'bg-uv3-green text-white' : 'bg-stone-200 text-stone-500'
+              }`}
+            >
+              {s}
+            </div>
+            <span className={`hidden text-xs font-semibold sm:inline ${step >= s ? 'text-uv3-green-dark' : 'text-stone-400'}`}>
+              {s === 1 ? 'Espacio' : s === 2 ? 'Fecha y horario' : 'Datos y pago'}
+            </span>
+            {s < 3 && <span className="h-px w-8 bg-stone-200" />}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
+          {step === 1 && (
+            <section>
+              <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-uv3-green-dark">1. Elige el espacio</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {spaces.map((s) => (
               <button
@@ -262,7 +284,10 @@ export function ReservasClient({ spaces, settings }: Props) {
             ))}
           </div>
         </section>
+          )}
 
+        {step === 2 && (
+        <>
         <section>
           <h2 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-uv3-green-dark">2. Fecha y disponibilidad</h2>
           <div className="rounded-lg border border-stone-200 bg-white p-4">
@@ -361,8 +386,11 @@ export function ReservasClient({ spaces, settings }: Props) {
             </label>
           )}
         </section>
+        </>
+      )}
       </div>
 
+      {step === 3 && (
       <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
         <div className="rounded-lg border border-stone-200 bg-white p-5">
           <p className="text-[11px] font-bold uppercase tracking-wider text-uv3-green">Resumen</p>
@@ -427,6 +455,30 @@ export function ReservasClient({ spaces, settings }: Props) {
           Al confirmar aceptas las normas de uso del espacio y la verificación del pago por la junta.
         </p>
       </div>
+      )}
+
+      {/* Botones de navegación entre pasos */}
+      <div className="flex items-center justify-between gap-3">
+        {step > 1 && (
+          <button
+            type="button"
+            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            className="rounded-lg border border-stone-300 px-5 py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50"
+          >
+            ← Atrás
+          </button>
+        )}
+        {step < 3 && (
+          <button
+            type="button"
+            onClick={() => setStep((s) => Math.min(3, s + 1))}
+            className="ml-auto rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white hover:bg-uv3-green-dark"
+          >
+            Continuar →
+          </button>
+        )}
+      </div>
+    </div>
     </div>
   );
 }

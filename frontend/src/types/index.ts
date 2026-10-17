@@ -294,6 +294,54 @@ export interface Gallery {
   updated_at: string;
 }
 
+// --- Junta Vecinal ----------------------------------------------------------
+
+export type BoardMemberPosition =
+  | 'presidente'
+  | 'vicepresidente'
+  | 'fiscal'
+  | 'secretario'
+  | 'tesorero'
+  | 'vocal_educacion'
+  | 'vocal_ecologia'
+  | 'vocal_deportes'
+  | 'otro';
+
+export interface BoardMember {
+  id: string;
+  position: BoardMemberPosition;
+  full_name: string;
+  photo_url: string | null;
+  bio: string | null;
+  email: string | null;
+  phone: string | null;
+  period: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Tesorería / Transparencia ----------------------------------------------
+
+export type TreasuryKind = 'ingreso' | 'egreso';
+
+export interface TreasuryEntry {
+  id: string;
+  entry_date: string;
+  kind: TreasuryKind;
+  category: string;
+  concept: string;
+  amount: number;
+  receipt_url: string | null;
+  responsible_member_id: string | null;
+  is_published: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  responsible?: BoardMember | null;
+}
+
 // Action response type
 export interface ActionResponse<T = null> {
   success: boolean;

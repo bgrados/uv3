@@ -12,10 +12,22 @@ export async function getTeamsAction(): Promise<ActionResponse<Team[]>> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
 
-  const { data, error } = await supabase
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para consultar equipos.' };
+  }
+
+  let query = supabase
     .from('teams')
     .select('*, delegate:users!delegate_id(id, full_name, email, username)')
     .order('name');
+
+  if (user.role === 'delegate') {
+    query = query.eq('delegate_id', user.id);
+  }
+
+  const { data, error } = await query;
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as Team[] };
@@ -24,6 +36,12 @@ export async function getTeamsAction(): Promise<ActionResponse<Team[]>> {
 export async function getTeamByIdAction(id: string): Promise<ActionResponse<Team>> {
   const supabase = await createClient();
   if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (!['admin', 'organizer', 'delegate'].includes(user.role)) {
+    return { success: false, error: 'No tienes permisos para consultar equipos.' };
+  }
 
   const { data, error } = await supabase
     .from('teams')
@@ -34,6 +52,9 @@ export async function getTeamByIdAction(id: string): Promise<ActionResponse<Team
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (user.role === 'delegate' && (data as Team).delegate_id !== user.id) {
+    return { success: false, error: 'No tienes permisos para consultar este equipo.' };
+  }
   return { success: true, data: data as Team };
 }
 
@@ -92,9 +113,28 @@ export async function updateTeamAction(id: string, formData: FormData): Promise<
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (logoUrl) updateData.logo_url = logoUrl;
 
-  const { error } = await supabase.from('teams').update(updateData).eq('id', id);
+  if (user.role === 'delegate') {
+    const { data: existing, error: existingError } = await supabase
+      .from('teams')
+      .select('delegate_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (existingError || !existing || existing.delegate_id !== user.id) {
+      return { success: false, error: 'No tienes permisos para editar este equipo.' };
+    }
+    delete updateData.delegate_id;
+  }
+
+  let updateQuery = supabase.from('teams').update(updateData).eq('id', id);
+  if (user.role === 'delegate') {
+    updateQuery = updateQuery.eq('delegate_id', user.id);
+  }
+  const { data: updatedRows, error } = await updateQuery.select('id');
 
   if (error) return { success: false, error: error.message };
+  if (!updatedRows || updatedRows.length === 0) {
+    return { success: false, error: 'No tienes permisos para editar este equipo.' };
+  }
 
   revalidatePath('/teams');
   revalidatePath(`/teams/${id}`);
