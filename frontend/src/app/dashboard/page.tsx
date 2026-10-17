@@ -81,13 +81,15 @@ export default async function DashboardPage() {
             Controla marcadores en tiempo real: +1 gol, cambiar estado, finalizar partido.
           </p>
         </Link>
-        <Link
-          href="/announcements"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
-        >
-          <h2 className="text-lg font-semibold text-uv3-green-dark">Comunicados</h2>
-          <p className="mt-2 text-sm text-gray-600">Revisa los avisos publicados para la comunidad.</p>
-        </Link>
+        {user?.role === 'admin' && (
+          <Link
+            href="/dashboard/announcements"
+            className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
+          >
+            <h2 className="text-lg font-semibold text-uv3-green-dark">Comunicados</h2>
+            <p className="mt-2 text-sm text-gray-600">Publica y administra los avisos para la comunidad.</p>
+          </Link>
+        )}
       </section>
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <Link
@@ -97,13 +99,15 @@ export default async function DashboardPage() {
           <h2 className="text-lg font-semibold text-uv3-green-dark">Equipos</h2>
           <p className="mt-2 text-sm text-gray-600">Administra los equipos registrados en la plataforma.</p>
         </Link>
-        <Link
-          href="/gallery"
-          className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
-        >
-          <h2 className="text-lg font-semibold text-uv3-green-dark">Galería</h2>
-          <p className="mt-2 text-sm text-gray-600">Mira las imágenes cargadas del torneo y la comunidad.</p>
-        </Link>
+        {user?.role === 'admin' && (
+          <Link
+            href="/dashboard/galeria"
+            className="rounded-lg border bg-white p-6 shadow-sm transition-colors hover:border-uv3-green hover:bg-uv3-green/5"
+          >
+            <h2 className="text-lg font-semibold text-uv3-green-dark">Galería</h2>
+            <p className="mt-2 text-sm text-gray-600">Publica álbumes de fotos para el portal de la comunidad.</p>
+          </Link>
+        )}
       </section>
     </main>
   );

@@ -14,6 +14,8 @@ const NAV_ITEMS = [
   { href: '/dashboard/reservas', label: 'Reservas', adminOnly: true },
   { href: '/dashboard/canchas', label: 'Canchas', adminOnly: true },
   { href: '/dashboard/comercios', label: 'Comercios', adminOnly: true },
+  { href: '/dashboard/galeria', label: 'Galería', adminOnly: true },
+  { href: '/dashboard/announcements', label: 'Comunicados', adminOnly: true },
   { href: '/dashboard/configuracion', label: 'Config.', adminOnly: true },
 ];
 

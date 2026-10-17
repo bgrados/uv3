@@ -151,3 +151,24 @@ export const updateMatchScoreSchema = z.object({
 });
 
 export type UpdateMatchScoreValues = z.infer<typeof updateMatchScoreSchema>;
+
+// --- Galería ----------------------------------------------------------------
+export const gallerySchema = z.object({
+  title: z.string().min(3, 'El título debe tener al menos 3 caracteres.').max(150),
+  description: z.string().max(600, 'La descripción es demasiado larga.').optional().nullable(),
+  image_url: z.string().optional().nullable(),
+});
+
+export type GalleryFormValues = z.infer<typeof gallerySchema>;
+
+// --- Comunicados ------------------------------------------------------------
+export const ANNOUNCEMENT_CATEGORIES = ['general', 'deportes', 'eventos', 'comunicado'] as const;
+
+export const announcementSchema = z.object({
+  title: z.string().min(3, 'El título debe tener al menos 3 caracteres.').max(200),
+  content: z.string().min(10, 'El contenido debe tener al menos 10 caracteres.'),
+  category: z.enum(ANNOUNCEMENT_CATEGORIES, { message: 'Selecciona una categoría válida.' }).default('general'),
+  image_url: z.string().optional().nullable(),
+});
+
+export type AnnouncementFormValues = z.infer<typeof announcementSchema>;

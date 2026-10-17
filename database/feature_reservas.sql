@@ -31,10 +31,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION public.is_admin(p_uid UUID)
+-- NOTA: el parametro se llama p_user_id (igual que en policies.sql) para que
+-- CREATE OR REPLACE no falle con "cannot change name of input parameter".
+CREATE OR REPLACE FUNCTION public.is_admin(p_user_id UUID)
 RETURNS BOOLEAN AS $$
     SELECT COALESCE(
-        (SELECT u.role = 'admin' FROM public.users u WHERE u.id = p_uid),
+        (SELECT u.role = 'admin' FROM public.users u WHERE u.id = p_user_id),
         FALSE
     );
 $$ LANGUAGE sql SECURITY DEFINER;
@@ -397,7 +399,9 @@ VALUES
   ('business-media', 'business-media', true, 3145728,
    ARRAY['image/png','image/jpeg','image/webp']),
   ('payment-proofs', 'payment-proofs', false, 3145728,
-   ARRAY['image/png','image/jpeg','image/webp'])
+   ARRAY['image/png','image/jpeg','image/webp']),
+  ('gallery-media', 'gallery-media', true, 2097152,
+   ARRAY['image/png', 'image/jpeg', 'image/webp'])
 ON CONFLICT (id) DO UPDATE
   SET public = EXCLUDED.public,
       file_size_limit = EXCLUDED.file_size_limit,
@@ -407,7 +411,7 @@ ON CONFLICT (id) DO UPDATE
 DROP POLICY IF EXISTS "UV3 public read branding" ON storage.objects;
 CREATE POLICY "UV3 public read branding"
   ON storage.objects FOR SELECT
-  USING (bucket_id IN ('branding','business-media'));
+  USING (bucket_id IN ('branding','business-media','gallery-media'));
 
 -- Subida de comprobantes por el público (portal sin registro).
 DROP POLICY IF EXISTS "UV3 public upload payment proofs" ON storage.objects;
@@ -421,7 +425,7 @@ DROP POLICY IF EXISTS "UV3 admin write media new" ON storage.objects;
 CREATE POLICY "UV3 admin write media new"
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
-    bucket_id IN ('branding','business-media','payment-proofs','team-logos','player-photos','tournament-banners')
+    bucket_id IN ('branding','business-media','payment-proofs','team-logos','player-photos','tournament-banners','gallery-media')
     AND EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'admin')
   );
 
@@ -437,7 +441,7 @@ DROP POLICY IF EXISTS "UV3 admin delete media new" ON storage.objects;
 CREATE POLICY "UV3 admin delete media new"
   ON storage.objects FOR DELETE TO authenticated
   USING (
-    bucket_id IN ('branding','business-media','payment-proofs')
+    bucket_id IN ('branding','business-media','payment-proofs','gallery-media')
     AND EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'admin')
   );
 

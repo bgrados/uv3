@@ -6,7 +6,7 @@ import { uploadMediaAction } from '@/app/actions/media';
 interface ImageUploaderProps {
   /** Nombre del campo oculto que viaja al formulario. */
   name: string;
-  bucket: 'team-logos' | 'player-photos' | 'tournament-banners' | 'branding' | 'business-media';
+  bucket: 'team-logos' | 'player-photos' | 'tournament-banners' | 'branding' | 'business-media' | 'gallery-media';
   label?: string;
   initialValue?: string | null;
   hint?: string;

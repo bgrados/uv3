@@ -4,8 +4,8 @@ import { createClient } from '@/utils/supabase/server';
 import { getCurrentUser } from '@/app/auth/actions';
 import type { ActionResponse } from '@/types';
 
-const BUCKETS = ['team-logos', 'player-photos', 'tournament-banners', 'branding', 'business-media'] as const;
-const ADMIN_ONLY = new Set(['branding', 'business-media']);
+const BUCKETS = ['team-logos', 'player-photos', 'tournament-banners', 'branding', 'business-media', 'gallery-media'] as const;
+const ADMIN_ONLY = new Set(['branding', 'business-media', 'gallery-media']);
 
 const NO_SUPABASE = {
   success: false,

@@ -47,7 +47,7 @@ WITH checks AS (
   FROM (VALUES
     ('team-logos'), ('player-photos'), ('tournament-banners'),
     -- feature_reservas.sql
-    ('branding'), ('business-media'), ('payment-proofs')
+    ('branding'), ('business-media'), ('payment-proofs'), ('gallery-media')
   ) AS b(name)
 
   UNION ALL

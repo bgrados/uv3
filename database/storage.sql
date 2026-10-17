@@ -16,6 +16,8 @@ VALUES
   ('player-photos', 'player-photos', true, 2097152,
    ARRAY['image/png', 'image/jpeg', 'image/webp']),
   ('tournament-banners', 'tournament-banners', true, 5242880,
+   ARRAY['image/png', 'image/jpeg', 'image/webp']),
+  ('gallery-media', 'gallery-media', true, 2097152,
    ARRAY['image/png', 'image/jpeg', 'image/webp'])
 ON CONFLICT (id) DO UPDATE
   SET public = EXCLUDED.public,
@@ -31,13 +33,13 @@ ON CONFLICT (id) DO UPDATE
 DROP POLICY IF EXISTS "UV3 public read of media buckets" ON storage.objects;
 CREATE POLICY "UV3 public read of media buckets"
   ON storage.objects FOR SELECT
-  USING (bucket_id IN ('team-logos', 'player-photos', 'tournament-banners'));
+  USING (bucket_id IN ('team-logos', 'player-photos', 'tournament-banners', 'gallery-media'));
 
 DROP POLICY IF EXISTS "UV3 staff can upload media" ON storage.objects;
 CREATE POLICY "UV3 staff can upload media"
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
-    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners')
+    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners', 'gallery-media')
     AND EXISTS (
       SELECT 1 FROM public.users u
       WHERE u.id = auth.uid()
@@ -49,7 +51,7 @@ DROP POLICY IF EXISTS "UV3 staff can update media" ON storage.objects;
 CREATE POLICY "UV3 staff can update media"
   ON storage.objects FOR UPDATE TO authenticated
   USING (
-    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners')
+    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners', 'gallery-media')
     AND EXISTS (
       SELECT 1 FROM public.users u
       WHERE u.id = auth.uid()
@@ -61,7 +63,7 @@ DROP POLICY IF EXISTS "UV3 staff can delete media" ON storage.objects;
 CREATE POLICY "UV3 staff can delete media"
   ON storage.objects FOR DELETE TO authenticated
   USING (
-    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners')
+    bucket_id IN ('team-logos', 'player-photos', 'tournament-banners', 'gallery-media')
     AND EXISTS (
       SELECT 1 FROM public.users u
       WHERE u.id = auth.uid()
