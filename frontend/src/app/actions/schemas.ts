@@ -180,3 +180,22 @@ export const announcementSchema = z.object({
 });
 
 export type AnnouncementFormValues = z.infer<typeof announcementSchema>;
+
+// --- Avisos / utilidad ------------------------------------------------------
+export const noticeSchema = z.object({
+  title: z.string().min(3, 'El título debe tener al menos 3 caracteres.').max(150),
+  content: z.string().max(2000, 'El aviso es demasiado largo.').optional().nullable(),
+  icon: z.string().max(8, 'Usa un solo emoji.').optional().nullable(),
+  link_url: z
+    .string()
+    .url('El enlace no es válido (debe empezar por https://).')
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
+  link_label: z.string().max(60).optional().nullable(),
+  is_featured: z.coerce.boolean().default(false),
+  is_active: z.coerce.boolean().default(true),
+  sort_order: z.coerce.number().int().min(0).max(999).default(0),
+});
+
+export type NoticeFormValues = z.infer<typeof noticeSchema>;

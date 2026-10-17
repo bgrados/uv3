@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import { updatePaymentStatusAction, updateReservationStatusAction } from '@/app/actions/reservations';
@@ -89,7 +89,7 @@ export default async function ReservaDetallePage({ params }: { params: Promise<{
         <h2 className="font-semibold text-uv3-green-dark">Comprobante de pago (Yape)</h2>
         {proofUrl ? (
           <div className="relative mt-3 max-w-sm overflow-hidden rounded-lg border">
-            <Image src={proofUrl} alt="Comprobante de pago" width={480} height={640} className="h-auto w-full object-contain" unoptimized />
+            <SmartImage src={proofUrl} alt="Comprobante de pago" width={480} height={640} className="h-auto w-full object-contain" unoptimized />
           </div>
         ) : (
           <p className="mt-2 text-sm text-stone-500">No hay comprobante adjunto.</p>

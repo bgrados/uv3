@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
@@ -161,7 +161,7 @@ export default async function TeamsAdminPage({ searchParams }: PageProps) {
                   >
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-uv3-bg">
                       {team.logo_url ? (
-                        <Image
+                        <SmartImage
                           src={team.logo_url}
                           alt={team.name}
                           width={48}

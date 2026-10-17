@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import type { Team } from '@/types';
@@ -47,7 +47,7 @@ export default async function TeamsPage() {
                 <Link href={`/teams/${team.id}`} className="flex items-start gap-4">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-uv3-bg">
                     {team.logo_url ? (
-                      <Image
+                      <SmartImage
                         src={team.logo_url}
                         alt={team.name}
                         width={56}

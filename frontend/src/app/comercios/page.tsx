@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import Link from 'next/link';
 import { getBusinessesAction } from '@/app/actions/businesses';
 import { BUSINESS_CATEGORY_LABEL } from '@/utils/site';
@@ -40,7 +40,7 @@ export default async function ComerciosPage() {
                 <article key={b.id} className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
                   <div className="relative h-44 w-full bg-stone-100">
                     {b.image_url ? (
-                      <Image src={b.image_url} alt={b.name} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover" />
+                      <SmartImage src={b.image_url} alt={b.name} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-4xl">🏬</div>
                     )}

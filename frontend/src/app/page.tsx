@@ -1,10 +1,12 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { getCurrentUser } from '@/app/auth/actions';
 import { createClient } from '@/utils/supabase/server';
 import { BusinessCarousel } from '@/components/BusinessCarousel';
+import { SmartImage } from '@/components/SmartImage';
 import { getBusinessesAction } from '@/app/actions/businesses';
 import { getSiteSettingsAction } from '@/app/actions/settings';
+import { getNoticesAction } from '@/app/actions/notices';
+import type { Notice } from '@/types';
 
 // =========================================================================
 // MOCK DATA FALLBACKS (Realistic content inspired by UV3's local life)
@@ -97,11 +99,13 @@ const FALLBACK_MATCHES = [
 export default async function HomePage() {
   const user = await getCurrentUser();
 
-  const [settings, businessesResult] = await Promise.all([
+  const [settings, businessesResult, noticesResult] = await Promise.all([
     getSiteSettingsAction(),
     getBusinessesAction(),
+    getNoticesAction(),
   ]);
   const businesses = businessesResult.success ? businessesResult.data ?? [] : [];
+  const notices: Notice[] = noticesResult.success ? noticesResult.data ?? [] : [];
   const logoSrc = settings.logo_url || '/logo.jpg';
 
   // ─────────────────────────────────────────────────────────────────
@@ -111,6 +115,7 @@ export default async function HomePage() {
   let standings = FALLBACK_STANDINGS;
   let matches = FALLBACK_MATCHES;
   let isDbConnected = false;
+  let latestGalleryImage: string | null = null;
 
   try {
     const supabase = await createClient();
@@ -167,6 +172,16 @@ export default async function HomePage() {
         }));
       }
       isDbConnected = true;
+
+      // Última portada de galería para el bloque “Archivo Histórico”.
+      const { data: dbGallery } = await supabase
+        .from('galleries')
+        .select('cover_image_url')
+        .not('cover_image_url', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (dbGallery?.cover_image_url) latestGalleryImage = dbGallery.cover_image_url;
     }
   } catch (error) {
     console.warn('Supabase not fully configured, rendering with mock database fallbacks.', error);
@@ -192,6 +207,11 @@ export default async function HomePage() {
   // se muestran todos los publicados.
   const featuredBusinesses = businesses.filter((b) => b.is_featured);
   const carouselBusinesses = featuredBusinesses.length ? featuredBusinesses : businesses;
+
+  // Los avisos “favorito” se muestran en la portada; si no hay ninguno marcado,
+  // se muestran todos los publicados para que la columna nunca quede vacía.
+  const featuredNotices = notices.filter((n) => n.is_featured);
+  const portadaNotices = featuredNotices.length ? featuredNotices : notices;
 
   return (
     <main className="min-h-screen bg-uv3-bg text-[#1c1917] font-sans selection:bg-uv3-gold selection:text-uv3-green-dark">
@@ -248,10 +268,11 @@ export default async function HomePage() {
           {/* Logo and Titles */}
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
             <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-uv3-green-dark p-1 bg-white shadow-md">
-              <Image
+              <SmartImage
                 src={logoSrc}
                 alt="Logo Unidad Vecinal 3"
                 fill
+                sizes="80px"
                 className="rounded-full object-cover"
                 priority
               />
@@ -380,7 +401,7 @@ export default async function HomePage() {
                   Por: Junta Vecinal UV3 · {new Date(featuredStory.created_at).toLocaleDateString('es-PE')}
                 </p>
                 <div className="relative h-[240px] w-full border border-uv3-green-dark/10 overflow-hidden rounded bg-stone-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]">
-                  <Image
+                  <SmartImage
                     src={featuredStory.image_url || '/uv3-news-1.jpg'}
                     alt={featuredStory.title}
                     fill
@@ -407,7 +428,7 @@ export default async function HomePage() {
                 <div key={story.id} className="flex gap-3 border-b border-stone-200/80 pb-4 last:border-0 last:pb-0">
                   {story.image_url && (
                     <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded bg-stone-100">
-                      <Image src={story.image_url} alt={story.title} fill sizes="96px" className="object-cover" />
+                      <SmartImage src={story.image_url} alt={story.title} fill sizes="96px" className="object-cover" />
                     </div>
                   )}
                   <div className="min-w-0">
@@ -566,44 +587,37 @@ export default async function HomePage() {
               </h3>
             </div>
 
-            {/* Boletines Vecinales Rápidos */}
-            <div className="border border-stone-200 bg-white p-5 rounded-lg shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-uv3-green">Servicios al Vecino</p>
-              <h4 className="font-heading text-base font-bold text-uv3-green-dark mt-1">Horarios de Canchas y Reserva</h4>
-              <ul className="mt-3 space-y-3 text-xs leading-relaxed text-stone-600">
-                <li className="flex items-start gap-2">
-                  <span className="text-uv3-gold mt-0.5">▪</span>
-                  <span><strong>Lunes a Viernes:</strong> 4:00 PM a 10:00 PM (Prioridad para entrenamientos de escuelas vecinales).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-uv3-gold mt-0.5">▪</span>
-                  <span><strong>Sábados y Domingos:</strong> 8:00 AM a 9:00 PM (Fechas del Campeonato y alquiler general).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-uv3-gold mt-0.5">▪</span>
-                  <span><strong>Reservas:</strong> Coordinar directamente con el delegado de deportes presentando DNI con dirección en la UV3.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Directiva de Propietarios - Contactos */}
-            <div className="border border-stone-200 bg-white p-5 rounded-lg shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-uv3-gold">Junta Vecinal 2024-2026</p>
-              <h4 className="font-heading text-base font-bold text-uv3-green-dark mt-1">Junta de Administración</h4>
-              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                Asociación encargada de la infraestructura, seguridad, parques, canchas y salones multiusos.
+            {/* Avisos editables desde el panel (⭐ = se muestra en la portada) */}
+            {portadaNotices.length > 0 ? (
+              portadaNotices.map((notice) => (
+                <div key={notice.id} className="border border-stone-200 bg-white p-5 rounded-lg shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-uv3-green">
+                    {notice.is_featured ? '★ Aviso destacado' : 'Aviso de utilidad'}
+                  </p>
+                  <h4 className="font-heading text-base font-bold text-uv3-green-dark mt-1">
+                    {notice.icon ? `${notice.icon} ` : ''}
+                    {notice.title}
+                  </h4>
+                  {notice.content && (
+                    <p className="mt-3 text-xs leading-relaxed text-stone-600 whitespace-pre-line">{notice.content}</p>
+                  )}
+                  {notice.link_url && (
+                    <a
+                      href={notice.link_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-block text-xs font-bold text-uv3-green hover:underline"
+                    >
+                      {notice.link_label || 'Ver más'} →
+                    </a>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-stone-500">
+                Aún no hay avisos publicados. Agrégalos desde el panel en “Avisos y utilidad”.
               </p>
-              <div className="mt-3 space-y-2 text-xs text-stone-700">
-                <div>
-                  <p className="font-bold">📍 Local Comunal UV3</p>
-                  <p className="text-stone-500 text-[11px]">Cerca de la UNMSM, Cercado de Lima</p>
-                </div>
-                <div>
-                  <p className="font-bold">✉️ Contacto Oficial</p>
-                  <p className="text-stone-500 text-[11px]">Mediante la página de Facebook autorizada</p>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Archivo Histórico / Galería Preview */}
             <div className="border border-stone-200 bg-white p-4 rounded-lg shadow-sm space-y-3">
@@ -617,10 +631,11 @@ export default async function HomePage() {
               </div>
 
               <div className="relative h-40 w-full overflow-hidden rounded bg-stone-100">
-                <Image
-                  src="/uv3-news-2.jpg"
+                <SmartImage
+                  src={latestGalleryImage || '/uv3-news-2.jpg'}
                   alt="Patrimonio Unidad Vecinal 3"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 320px"
                   className="object-cover transition-transform duration-500 hover:scale-105"
                 />
               </div>
@@ -684,10 +699,11 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/20 bg-white p-0.5">
-              <Image
+              <SmartImage
                 src={logoSrc}
                 alt="Logo UV3"
                 fill
+                sizes="48px"
                 className="rounded-full object-cover"
               />
             </div>

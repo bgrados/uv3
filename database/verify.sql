@@ -17,7 +17,9 @@ WITH checks AS (
     ('announcements'), ('galleries'),
     -- feature_reservas.sql
     ('spaces'), ('space_sports'), ('space_blocks'), ('reservations'),
-    ('businesses'), ('site_settings')
+    ('businesses'), ('site_settings'),
+    -- feature_notices.sql
+    ('notices')
   ) AS t(name)
 
   UNION ALL

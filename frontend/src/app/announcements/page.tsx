@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import { createClient } from '@/utils/supabase/server';
 import { getVideoEmbed } from '@/utils/site';
 import type { Announcement } from '@/types';
@@ -86,7 +86,7 @@ export default async function AnnouncementsPage() {
             >
               {item.image_url && (
                 <div className="relative aspect-[16/9] w-full bg-gray-100">
-                  <Image
+                  <SmartImage
                     src={item.image_url}
                     alt={item.title}
                     fill

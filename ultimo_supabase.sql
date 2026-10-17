@@ -4,29 +4,31 @@
 -- Pega TODO este archivo en Supabase > SQL Editor > New query > Run.
 --
 -- CONTENIDO Y ORDEN:
---   1/9  schema.sql .......... tablas base, indices, funciones y triggers
---   2/9  policies.sql ........ RLS + helpers (is_admin, is_organizer, ...)
---   3/9  storage.sql ......... buckets base de Storage y sus politicas
---   4/9  migration_sport.sql . columna tournaments.sport (si faltara)
---   5/9  feature_reservas.sql  reservas, comercios, config del sitio + buckets
---   6/9  fix_demo_users.sql .. repara las cuentas demo de Auth (opcional)
---   7/9  grant_admin.sql ..... promueve TU cuenta a admin (CAMBIA EL CORREO)
---   8/9  verify.sql ......... comprobacion final (todas las filas deben ser OK)
---   9/9  seeds.sql .......... DATOS DE EJEMPLO (ACTIVO - BORRA DATOS, ver abajo)
+--   1/10  schema.sql .......... tablas base, indices, funciones y triggers
+--   2/10  policies.sql ........ RLS + helpers (is_admin, is_organizer, ...)
+--   3/10  storage.sql ......... buckets base de Storage y sus politicas
+--   4/10  migration_sport.sql . columna tournaments.sport (si faltara)
+--   5/10  feature_reservas.sql  reservas, comercios, config del sitio + buckets
+--   6/10  feature_notices.sql . avisos de utilidad de la portada (editables)
+--   7/10  fix_demo_users.sql .. repara las cuentas demo de Auth (opcional)
+--   8/10  grant_admin.sql ..... promueve TU cuenta a admin (CAMBIA EL CORREO)
+--   9/10  verify.sql .......... comprobacion final (todas las filas deben ser OK)
+--  10/10  seeds.sql .......... DATOS DE EJEMPLO (ACTIVO - BORRA DATOS, ver abajo)
 --
--- IMPORTANTE - SECCION 9 (seeds.sql) ESTA ACTIVA Y ES DESTRUCTIVA:
+-- IMPORTANTE - SECCION 10 (seeds.sql) ESTA ACTIVA Y ES DESTRUCTIVA:
 --   Hace TRUNCATE de varias tablas y borra las cuentas demo, y luego las vuelve
 --   a crear con datos de ejemplo (equipos, jugadores, partidos, goles,
---   comunicados y galeria). Las cuentas demo quedan con clave password123.
+--   comunicados, galeria, comercios y avisos). Las cuentas demo quedan con la
+--   clave password123.
 --   Ejecuta este archivo completo SOLO en una base de PRUEBAS o si quieres
 --   reiniciar los datos de ejemplo. Si NO quieres borrar datos:
---     a) comenta o elimina toda la SECCION 9/9 antes de ejecutar, o
---     b) ejecuta solo hasta la SECCION 8/9.
---   Las secciones 1 a 8 son idempotentes y NO borran datos.
+--     a) comenta o elimina toda la SECCION 10/10 antes de ejecutar, o
+--     b) ejecuta solo hasta la SECCION 9/10.
+--   Las secciones 1 a 9 son idempotentes y NO borran datos.
 -- ============================================================================
 
 -- ============================================================================
--- SECCION 1/9 - schema.sql
+-- SECCION 1/10 - schema.sql
 -- ============================================================================
 
 -- UV3 PLATFORM - COMPLETE DATABASE SCHEMA
@@ -454,7 +456,7 @@ CREATE TRIGGER trigger_recalculate_standings
 
 
 -- ============================================================================
--- SECCION 2/9 - policies.sql
+-- SECCION 2/10 - policies.sql
 -- ============================================================================
 
 -- UV3 PLATFORM - ROW LEVEL SECURITY (RLS) POLICIES
@@ -624,7 +626,7 @@ CREATE POLICY "Organizers/Admins can manage galleries" ON public.galleries FOR A
 
 
 -- ============================================================================
--- SECCION 3/9 - storage.sql
+-- SECCION 3/10 - storage.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -702,7 +704,7 @@ CREATE POLICY "UV3 staff can delete media"
 
 
 -- ============================================================================
--- SECCION 4/9 - migration_sport.sql
+-- SECCION 4/10 - migration_sport.sql
 -- ============================================================================
 
 -- UV3 PLATFORM — MIGRATION: Add sport column to tournaments
@@ -717,7 +719,7 @@ COMMENT ON COLUMN public.tournaments.sport IS 'Tipo de deporte: futbol, futbol_s
 
 
 -- ============================================================================
--- SECCION 5/9 - feature_reservas.sql
+-- SECCION 5/10 - feature_reservas.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -1233,7 +1235,83 @@ UNION ALL SELECT 'bucket payment-proofs', count(*) FROM storage.buckets WHERE id
 
 
 -- ============================================================================
--- SECCION 6/9 - fix_demo_users.sql
+-- SECCION 6/10 - feature_notices.sql
+-- ============================================================================
+
+-- ============================================================================
+-- UV3 PLATFORM — AVISOS Y UTILIDAD (sección editable de la portada)
+-- ----------------------------------------------------------------------------
+-- Crea la tabla `notices` (avisos/comunicados de utilidad). Se pueden tener
+-- muchos avisos y marcar cuáles se muestran en la portada con `is_featured`.
+--
+-- Es idempotente y no borra datos. Puede ejecutarse suelto en el SQL Editor.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.notices (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title       TEXT NOT NULL,
+    content     TEXT,
+    icon        TEXT DEFAULT '📌',
+    link_url    TEXT,
+    link_label  TEXT,
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE, -- “Favorito”: se muestra en la portada.
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notices_active_order
+    ON public.notices(is_active, is_featured, sort_order);
+
+DROP TRIGGER IF EXISTS update_notices_timestamp ON public.notices;
+CREATE TRIGGER update_notices_timestamp
+    BEFORE UPDATE ON public.notices
+    FOR EACH ROW EXECUTE FUNCTION public.handle_update_timestamp();
+
+-- ----------------------------------------------------------------------------
+-- Seguridad (RLS): lectura pública de los avisos activos; sólo el admin edita.
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "notices lectura publica" ON public.notices;
+CREATE POLICY "notices lectura publica" ON public.notices FOR SELECT
+    USING (is_active OR public.is_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "notices admin" ON public.notices;
+CREATE POLICY "notices admin" ON public.notices FOR ALL TO authenticated
+    USING (public.is_admin(auth.uid())) WITH CHECK (public.is_admin(auth.uid()));
+
+-- ----------------------------------------------------------------------------
+-- Contenido inicial (sólo si la tabla está vacía). Reemplaza los bloques que
+-- antes estaban fijos en la portada. Se editan desde el panel.
+-- ----------------------------------------------------------------------------
+INSERT INTO public.notices (title, content, icon, is_featured, sort_order)
+SELECT * FROM (VALUES
+  (
+    'Horarios de Canchas y Reserva',
+    E'Lunes a Viernes: 4:00 PM a 10:00 PM (prioridad para escuelas vecinales).\nSábados y Domingos: 8:00 AM a 9:00 PM (campeonato y alquiler general).\n\nReservas: coordinar con el delegado de deportes presentando DNI con dirección en la UV3.',
+    '🕒', TRUE, 1
+  ),
+  (
+    'Junta de Administración',
+    E'Asociación encargada de la infraestructura, seguridad, parques, canchas y salones multiusos.\n\n📍 Local Comunal UV3, cerca de la UNMSM, Cercado de Lima.\n✉️ Contacto oficial mediante la página de Facebook.',
+    '🏛️', TRUE, 2
+  ),
+  (
+    'Vecino, cuida tu barrio',
+    'La Unidad Vecinal Nº3 es patrimonio urbanístico. Reporta incidencias de mantenimiento y seguridad a la Junta General.',
+    '🤝', TRUE, 3
+  )
+) AS v(title, content, icon, is_featured, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM public.notices);
+
+-- Comprobación rápida.
+SELECT 'notices' AS tabla, count(*) AS filas FROM public.notices;
+
+
+-- ============================================================================
+-- SECCION 7/10 - fix_demo_users.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -1394,7 +1472,7 @@ ORDER BY u.email;
 
 
 -- ============================================================================
--- SECCION 7/9 - grant_admin.sql
+-- SECCION 8/10 - grant_admin.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -1423,7 +1501,7 @@ WHERE email = 'bgrados@gmail.com';
 
 
 -- ============================================================================
--- SECCION 8/9 - verify.sql
+-- SECCION 9/10 - verify.sql
 -- ============================================================================
 
 -- ============================================================================
@@ -1445,7 +1523,9 @@ WITH checks AS (
     ('announcements'), ('galleries'),
     -- feature_reservas.sql
     ('spaces'), ('space_sports'), ('space_blocks'), ('reservations'),
-    ('businesses'), ('site_settings')
+    ('businesses'), ('site_settings'),
+    -- feature_notices.sql
+    ('notices')
   ) AS t(name)
 
   UNION ALL
@@ -1525,7 +1605,7 @@ ORDER BY ok, tipo, objeto;
 
 
 -- ============================================================================
--- SECCION 9/9 - seeds.sql (DATOS DE EJEMPLO - ACTIVO / DESTRUCTIVO)
+-- SECCION 10/10 - seeds.sql (DATOS DE EJEMPLO - ACTIVO / DESTRUCTIVO)
 -- Hace TRUNCATE de varias tablas y borra las cuentas demo. Ver encabezado.
 -- ============================================================================
 

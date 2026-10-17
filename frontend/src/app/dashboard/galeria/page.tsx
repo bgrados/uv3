@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton';
+import { SubmitButton } from '@/components/SubmitButton';
 import {
   addGalleryImageAction,
   createGalleryAction,
@@ -86,9 +87,9 @@ export default async function GaleriaAdminPage({
             <textarea name="description" rows={2} placeholder="Breve descripción de la publicación" className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green" />
           </label>
           <ImageUploader name="image_url" bucket="gallery-media" label="Foto de la publicación" />
-          <button type="submit" className="mt-2 w-fit rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">
-            Crear publicación
-          </button>
+          <div className="mt-2">
+            <SubmitButton label="Crear publicación" pendingLabel="Creando…" />
+          </div>
         </form>
       </section>
 
@@ -122,16 +123,18 @@ export default async function GaleriaAdminPage({
                 <textarea name="description" rows={2} defaultValue={g.description ?? ''} className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green" />
               </label>
               <ImageUploader name="image_url" bucket="gallery-media" label="Foto de la publicación" initialValue={g.cover_image_url ?? ''} />
-              <button type="submit" className="w-fit rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">Guardar cambios</button>
+              <SubmitButton label="Guardar cambios" pendingLabel="Guardando…" className="w-fit rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60" />
             </form>
 
             <form action={addImageForm} className="mt-4 grid gap-3 border-t pt-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Agregar nueva foto</p>
               <input type="hidden" name="id" value={g.id} />
               <ImageUploader name="image_url" bucket="gallery-media" label="Nueva foto" />
-              <button type="submit" className="w-fit rounded-lg border border-uv3-green px-4 py-2 text-sm font-bold text-uv3-green-dark hover:bg-uv3-green hover:text-white">
-                Agregar foto
-              </button>
+              <SubmitButton
+                label="Agregar foto"
+                pendingLabel="Subiendo…"
+                className="w-fit rounded-lg border border-uv3-green px-4 py-2 text-sm font-bold text-uv3-green-dark hover:bg-uv3-green hover:text-white disabled:opacity-60"
+              />
             </form>
 
             {g.images && g.images.length > 0 && (

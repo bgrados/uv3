@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import { useEffect, useState } from 'react';
 import type { Gallery } from '@/types';
 
@@ -34,7 +34,7 @@ export function GalleryAlbum({ gallery }: { gallery: Gallery }) {
         aria-label={cover ? `Ver fotos de ${gallery.title}` : gallery.title}
       >
         {cover ? (
-          <Image src={cover} alt={gallery.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+          <SmartImage src={cover} alt={gallery.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
         ) : (
           <span className="flex h-full items-center justify-center text-4xl text-gray-300">📷</span>
         )}
@@ -53,7 +53,7 @@ export function GalleryAlbum({ gallery }: { gallery: Gallery }) {
                 onClick={() => setActive(index)}
                 className="relative aspect-square overflow-hidden rounded bg-gray-100"
               >
-                <Image
+                <SmartImage
                   src={url}
                   alt={`${gallery.title} — imagen ${index + 1}`}
                   fill
@@ -110,7 +110,7 @@ export function GalleryAlbum({ gallery }: { gallery: Gallery }) {
           )}
 
           <div className="relative h-[80vh] w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-            <Image src={photos[active]} alt={`${gallery.title} — imagen ${active + 1}`} fill sizes="100vw" className="object-contain" />
+            <SmartImage src={photos[active]} alt={`${gallery.title} — imagen ${active + 1}`} fill sizes="100vw" className="object-contain" />
           </div>
         </div>
       )}

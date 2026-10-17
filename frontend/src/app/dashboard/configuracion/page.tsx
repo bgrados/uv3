@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { ImageUploader } from '@/components/ImageUploader';
 import { updateSiteSettingsAction } from '@/app/actions/settings';
+import { SubmitButton } from '@/components/SubmitButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,7 +106,7 @@ export default async function ConfiguracionPage({
           Estas horas son solo la referencia del portal; cada espacio puede tener su propio horario nocturno.
         </p>
 
-        <button className="rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">Guardar configuración</button>
+        <SubmitButton label="Guardar configuración" pendingLabel="Guardando…" />
       </form>
     </main>
   );

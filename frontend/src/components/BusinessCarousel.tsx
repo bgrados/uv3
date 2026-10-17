@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import type { Business } from '@/types';
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -79,7 +79,7 @@ export function BusinessCarousel({ businesses, interval = 5000 }: BusinessCarous
             <article key={b.id} className="flex w-full shrink-0 flex-col sm:flex-row">
               <div className="relative h-52 w-full shrink-0 bg-stone-100 sm:h-auto sm:w-1/2">
                 {b.image_url ? (
-                  <Image src={b.image_url} alt={b.name} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
+                  <SmartImage src={b.image_url} alt={b.name} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-4xl">🏬</div>
                 )}

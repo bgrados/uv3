@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton';
+import { SubmitButton } from '@/components/SubmitButton';
 import { createSpaceAction, deleteSpaceAction, updateSpaceAction } from '@/app/actions/spaces';
 import type { Space } from '@/types';
 
@@ -134,7 +135,9 @@ export default async function CanchasPage({
         <h2 className="text-xl font-semibold text-uv3-green-dark">Nuevo espacio</h2>
         <form action={createForm} className="mt-4">
           <SpaceFields />
-          <button className="mt-5 rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">Crear espacio</button>
+          <div className="mt-5">
+            <SubmitButton label="Crear espacio" pendingLabel="Creando…" />
+          </div>
         </form>
       </section>
 
@@ -157,7 +160,7 @@ export default async function CanchasPage({
               <input type="hidden" name="id" value={s.id} />
               <SpaceFields space={s} />
               <div className="mt-5 flex gap-3">
-                <button className="rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">Guardar cambios</button>
+                <SubmitButton label="Guardar cambios" pendingLabel="Guardando…" />
               </div>
             </form>
             <form action={deleteForm} className="mt-4 border-t pt-4">

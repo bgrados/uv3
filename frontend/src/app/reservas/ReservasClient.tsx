@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import { createClient } from '@/utils/supabase/client';
 import { SPORT_LABEL } from '@/components/SportBadge';
 import { computePrice, limaDateString } from '@/utils/reservations';
@@ -237,7 +237,7 @@ export function ReservasClient({ spaces, settings }: Props) {
               >
                 <div className="relative h-32 w-full bg-stone-100">
                   {s.image_url ? (
-                    <Image src={s.image_url} alt={s.name} fill sizes="(max-width: 640px) 100vw, 320px" className="object-cover" />
+                    <SmartImage src={s.image_url} alt={s.name} fill sizes="(max-width: 640px) 100vw, 320px" className="object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-4xl">🏟️</div>
                   )}

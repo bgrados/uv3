@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton';
+import { SubmitButton } from '@/components/SubmitButton';
 import {
   createAnnouncementAction,
   deleteAnnouncementAction,
@@ -145,9 +146,9 @@ export default async function AnnouncementsAdminPage({
         <h2 className="text-xl font-semibold text-uv3-green-dark">Nuevo comunicado</h2>
         <form action={createForm} className="mt-4">
           <AnnouncementFields />
-          <button type="submit" className="mt-5 rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">
-            Publicar comunicado
-          </button>
+          <div className="mt-5">
+            <SubmitButton label="Publicar comunicado" pendingLabel="Publicando…" />
+          </div>
         </form>
       </section>
 
@@ -178,9 +179,9 @@ export default async function AnnouncementsAdminPage({
             <form action={updateForm} className="mt-4 border-t pt-4">
               <input type="hidden" name="id" value={a.id} />
               <AnnouncementFields announcement={a} />
-              <button type="submit" className="mt-5 rounded-lg bg-uv3-green px-5 py-2.5 text-sm font-bold text-white">
-                Guardar cambios
-              </button>
+              <div className="mt-5">
+                <SubmitButton label="Guardar cambios" pendingLabel="Guardando…" />
+              </div>
             </form>
 
             <form action={deleteForm} className="mt-4 border-t pt-4">

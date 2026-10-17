@@ -141,6 +141,23 @@ export interface Business {
   updated_at: string;
 }
 
+// --- Avisos / utilidad ------------------------------------------------------
+
+export interface Notice {
+  id: string;
+  title: string;
+  content: string | null;
+  icon: string | null;
+  link_url: string | null;
+  link_label: string | null;
+  /** “Favorito”: se muestra en la sección "Avisos y Utilidad" de la portada. */
+  is_featured: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Configuración del sitio ----------------------------------------------
 
 export interface SiteSettings {

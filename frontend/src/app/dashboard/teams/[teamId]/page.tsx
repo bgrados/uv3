@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SmartImage } from '@/components/SmartImage';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
@@ -138,7 +138,7 @@ export default async function TeamDetailPage({ params, searchParams }: PageProps
       <section className="mb-8 flex flex-wrap items-center gap-5 rounded-2xl bg-gradient-to-br from-uv3-green-dark to-uv3-green p-8 text-white shadow-lg">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border-2 border-white/30 bg-white/10">
           {team.logo_url ? (
-            <Image
+            <SmartImage
               src={team.logo_url}
               alt={team.name}
               width={80}
@@ -301,7 +301,7 @@ export default async function TeamDetailPage({ params, searchParams }: PageProps
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-uv3-bg text-sm font-bold text-uv3-green-dark">
                         {player.photo_url ? (
-                          <Image
+                          <SmartImage
                             src={player.photo_url}
                             alt={`${player.first_name} ${player.last_name}`}
                             width={40}
