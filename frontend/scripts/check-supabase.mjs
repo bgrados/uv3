@@ -83,6 +83,15 @@ const TABLES = [
   'schedules',
   'announcements',
   'galleries',
+  'notices',
+  'board_members',
+  'treasury_entries',
+  'spaces',
+  'space_sports',
+  'space_blocks',
+  'reservations',
+  'businesses',
+  'site_settings',
 ];
 
 const BUCKETS = ['team-logos', 'player-photos', 'tournament-banners'];
@@ -161,6 +170,18 @@ const columnChecks = [
   ['announcements', 'category'],
   ['galleries', 'title'],
   ['galleries', 'images'],
+  ['notices', 'title'],
+  ['notices', 'is_active'],
+  ['board_members', 'full_name'],
+  ['board_members', 'position'],
+  ['treasury_entries', 'amount'],
+  ['treasury_entries', 'is_published'],
+  ['spaces', 'name'],
+  ['spaces', 'day_rate'],
+  ['reservations', 'status'],
+  ['businesses', 'name'],
+  ['businesses', 'is_active'],
+  ['site_settings', 'site_name'],
 ];
 let columnsOk = 0;
 for (const [table, column] of columnChecks) {
