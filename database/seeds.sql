@@ -162,10 +162,10 @@ VALUES
 -- =========================================================================
 -- 9. COMUNICADOS (announcements)
 -- =========================================================================
-INSERT INTO public.announcements (title, content, author_id, category)
+INSERT INTO public.announcements (title, content, author_id, category, image_url, is_featured)
 VALUES
-    ('Gran Convocatoria al Campeonato Apertura 2026', 'Se convoca a todos los delegados de los bloques de la UV3 a la reunión informativa este viernes a las 8:00 PM en el local comunal para definir las bases y sorteo del fixture.', 'b2222222-2222-4222-8222-222222222222', 'deportes'),
-    ('Mantenimiento Programado de Cancha Principal', 'Vecinos, les informamos que la Cancha Sintetica Principal estará cerrada por mantenimiento de césped e iluminación desde el lunes 1 de junio hasta el miércoles 3 de junio. Agradecemos su comprensión.', 'a1111111-1111-4111-8111-111111111111', 'comunicado');
+    ('Gran Convocatoria al Campeonato Apertura 2026', 'Se convoca a todos los delegados de los bloques de la UV3 a la reunión informativa este viernes a las 8:00 PM en el local comunal para definir las bases y sorteo del fixture.', 'b2222222-2222-4222-8222-222222222222', 'deportes', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200', TRUE),
+    ('Mantenimiento Programado de Cancha Principal', 'Vecinos, les informamos que la Cancha Sintetica Principal estará cerrada por mantenimiento de césped e iluminación desde el lunes 1 de junio hasta el miércoles 3 de junio. Agradecemos su comprensión.', 'a1111111-1111-4111-8111-111111111111', 'comunicado', 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1200', TRUE);
 
 -- =========================================================================
 -- 10. GALERÍA (galleries)

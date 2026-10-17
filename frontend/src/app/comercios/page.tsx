@@ -47,6 +47,11 @@ export default async function ComerciosPage() {
                     <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-uv3-green">
                       {BUSINESS_CATEGORY_LABEL[b.category]}
                     </span>
+                    {b.is_featured && (
+                      <span className="absolute right-3 top-3 rounded-full bg-uv3-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-uv3-green-dark">
+                        ⭐ Destacado
+                      </span>
+                    )}
                   </div>
                   <div className="p-4">
                     <h2 className="font-heading text-lg font-bold text-uv3-green-dark">{b.name}</h2>

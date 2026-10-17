@@ -81,6 +81,10 @@ function AnnouncementFields({ announcement }: { announcement?: Announcement }) {
           el enlace.
         </span>
       </label>
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" name="is_featured" value="true" defaultChecked={announcement?.is_featured ?? false} /> ⭐
+        Destacar en la portada (favorito)
+      </label>
     </div>
   );
 }
@@ -157,10 +161,14 @@ export default async function AnnouncementsAdminPage({
             <summary className="cursor-pointer list-none">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-stone-800">{a.title}</p>
+                  <p className="font-semibold text-stone-800">
+                    {a.is_featured && <span title="Destacado en portada">⭐ </span>}
+                    {a.title}
+                  </p>
                   <p className="text-xs text-stone-500">
                     {CATEGORY_LABEL[a.category] ?? a.category} ·{' '}
                     {a.created_at ? new Date(a.created_at).toLocaleDateString('es-PE') : ''}
+                    {a.is_featured ? ' · destacado' : ''}
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-uv3-green">Editar ▾</span>

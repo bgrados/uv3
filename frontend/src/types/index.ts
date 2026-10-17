@@ -134,6 +134,8 @@ export interface Business {
   logo_url: string | null;
   image_url: string | null;
   is_active: boolean;
+  /** “Favorito”: se muestra en el carrusel de la portada. */
+  is_featured: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -258,6 +260,8 @@ export interface Announcement {
   video_url: string | null;
   author_id: string | null;
   category: 'general' | 'deportes' | 'eventos' | 'comunicado';
+  /** “Favorito”: se muestra destacado en la portada. */
+  is_featured: boolean;
   author?: User;
   created_at: string;
   updated_at: string;

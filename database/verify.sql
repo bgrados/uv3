@@ -74,6 +74,22 @@ WITH checks AS (
            SELECT 1 FROM information_schema.columns
            WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'video_url'
          )
+
+  UNION ALL
+
+  SELECT 'columna', 'announcements.is_featured',
+         EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'is_featured'
+         )
+
+  UNION ALL
+
+  SELECT 'columna', 'businesses.is_featured',
+         EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'businesses' AND column_name = 'is_featured'
+         )
 )
 SELECT tipo, objeto, CASE WHEN ok THEN 'OK' ELSE 'FALTA' END AS estado
 FROM checks

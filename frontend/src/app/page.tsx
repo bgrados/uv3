@@ -9,7 +9,17 @@ import { getSiteSettingsAction } from '@/app/actions/settings';
 // =========================================================================
 // MOCK DATA FALLBACKS (Realistic content inspired by UV3's local life)
 // =========================================================================
-const FALLBACK_ANNOUNCEMENTS = [
+type HomeAnnouncement = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  created_at: string;
+  image_url?: string | null;
+  is_featured?: boolean;
+};
+
+const FALLBACK_ANNOUNCEMENTS: HomeAnnouncement[] = [
   {
     id: '1',
     title: 'Asoc. Junta General de Propietarios UV3 convoca a asamblea extraordinaria de delegados',
@@ -97,7 +107,7 @@ export default async function HomePage() {
   // ─────────────────────────────────────────────────────────────────
   // DATA FETCHING (Supabase with graceful fallback)
   // ─────────────────────────────────────────────────────────────────
-  let announcements = FALLBACK_ANNOUNCEMENTS;
+  let announcements: HomeAnnouncement[] = FALLBACK_ANNOUNCEMENTS;
   let standings = FALLBACK_STANDINGS;
   let matches = FALLBACK_MATCHES;
   let isDbConnected = false;
@@ -110,7 +120,7 @@ export default async function HomePage() {
         .from('announcements')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(6);
+        .limit(12);
       
       if (!aErr && dbAnnouncements && dbAnnouncements.length > 0) {
         announcements = dbAnnouncements;
@@ -170,8 +180,18 @@ export default async function HomePage() {
     year: 'numeric',
   }).format(new Date());
 
-  const featuredStory = announcements[0] || FALLBACK_ANNOUNCEMENTS[0];
-  const sideStories = announcements.slice(1, 4);
+  // Los comunicados marcados como “favorito” se muestran primero en la portada.
+  const featuredAnnouncements = announcements.filter((a) => a.is_featured);
+  const orderedAnnouncements = featuredAnnouncements.length
+    ? [...featuredAnnouncements, ...announcements.filter((a) => !a.is_featured)]
+    : announcements;
+  const featuredStory = orderedAnnouncements[0] || FALLBACK_ANNOUNCEMENTS[0];
+  const sideStories = orderedAnnouncements.slice(1, 4);
+
+  // Los comercios “favorito” van al carrusel de la portada; si no hay ninguno,
+  // se muestran todos los publicados.
+  const featuredBusinesses = businesses.filter((b) => b.is_featured);
+  const carouselBusinesses = featuredBusinesses.length ? featuredBusinesses : businesses;
 
   return (
     <main className="min-h-screen bg-uv3-bg text-[#1c1917] font-sans selection:bg-uv3-gold selection:text-uv3-green-dark">
@@ -361,15 +381,18 @@ export default async function HomePage() {
                 </p>
                 <div className="relative h-[240px] w-full border border-uv3-green-dark/10 overflow-hidden rounded bg-stone-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]">
                   <Image
-                    src="/uv3-news-1.jpg"
+                    src={featuredStory.image_url || '/uv3-news-1.jpg'}
                     alt={featuredStory.title}
                     fill
+                    sizes="(max-width: 1024px) 100vw, 420px"
                     className="object-cover transition-transform duration-700 hover:scale-105"
                     priority
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-white text-xs">
-                    <p className="font-semibold italic">Archivo Histórico: Entorno de la Unidad Vecinal Nº3, Lima.</p>
-                  </div>
+                  {!featuredStory.image_url && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-white text-xs">
+                      <p className="font-semibold italic">Archivo Histórico: Entorno de la Unidad Vecinal Nº3, Lima.</p>
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm leading-relaxed text-[#44403c] text-justify font-sans">
                   {featuredStory.content}
@@ -381,16 +404,23 @@ export default async function HomePage() {
             {/* Side Stories (Grid of smaller cards) */}
             <div className="space-y-4">
               {sideStories.map((story) => (
-                <div key={story.id} className="border-b border-stone-200/80 pb-4 last:border-0 last:pb-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-uv3-gold">
-                    {story.category.toUpperCase()}
-                  </span>
-                  <h5 className="font-heading text-base font-bold text-uv3-green-dark hover:text-uv3-green mt-1">
-                    <Link href={`/announcements#${story.id}`}>{story.title}</Link>
-                  </h5>
-                  <p className="text-xs text-[#57534e] mt-1 leading-relaxed line-clamp-2">
-                    {story.content}
-                  </p>
+                <div key={story.id} className="flex gap-3 border-b border-stone-200/80 pb-4 last:border-0 last:pb-0">
+                  {story.image_url && (
+                    <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded bg-stone-100">
+                      <Image src={story.image_url} alt={story.title} fill sizes="96px" className="object-cover" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-uv3-gold">
+                      {story.category.toUpperCase()}
+                    </span>
+                    <h5 className="font-heading text-base font-bold text-uv3-green-dark hover:text-uv3-green mt-1">
+                      <Link href={`/announcements#${story.id}`}>{story.title}</Link>
+                    </h5>
+                    <p className="text-xs text-[#57534e] mt-1 leading-relaxed line-clamp-2">
+                      {story.content}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -607,7 +637,7 @@ export default async function HomePage() {
       {/* ─────────────────────────────────────────────────────────────────
           COMERCIOS DE LA UNIDAD (Carrusel)
           ───────────────────────────────────────────────────────────────── */}
-      {businesses.length > 0 && (
+      {carouselBusinesses.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-8">
           <div className="mb-4 flex items-end justify-between border-b-4 border-uv3-green pb-1.5">
             <h3 className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-uv3-green-dark">
@@ -617,7 +647,7 @@ export default async function HomePage() {
               Ver todos →
             </Link>
           </div>
-          <BusinessCarousel businesses={businesses} />
+          <BusinessCarousel businesses={carouselBusinesses} />
         </section>
       )}
 

@@ -55,7 +55,8 @@ function readBusinessForm(formData: FormData) {
     address: (formData.get('address') as string) || null,
     logo_url: (formData.get('logo_url') as string) || null,
     image_url: (formData.get('image_url') as string) || null,
-    is_active: formData.get('is_active') !== 'false',
+    is_active: formData.get('is_active') === 'true',
+    is_featured: formData.get('is_featured') === 'true',
     sort_order: Number(formData.get('sort_order') ?? 0),
   };
 }

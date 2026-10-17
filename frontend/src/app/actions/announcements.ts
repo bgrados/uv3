@@ -50,6 +50,7 @@ export async function createAnnouncementAction(formData: FormData): Promise<Acti
     category: (formData.get('category') as string) || 'general',
     image_url: String(formData.get('image_url') ?? '').trim() || null,
     video_url: String(formData.get('video_url') ?? '').trim() || null,
+    is_featured: formData.get('is_featured') === 'true',
   });
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 
@@ -76,6 +77,7 @@ export async function updateAnnouncementAction(id: string, formData: FormData): 
     category: (formData.get('category') as string) || 'general',
     image_url: String(formData.get('image_url') ?? '').trim() || null,
     video_url: String(formData.get('video_url') ?? '').trim() || null,
+    is_featured: formData.get('is_featured') === 'true',
   });
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 

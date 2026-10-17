@@ -181,12 +181,14 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     video_url TEXT, -- Enlace externo (YouTube/Facebook/Vimeo): no se aloja en Supabase.
     author_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     category TEXT NOT NULL DEFAULT 'general' CHECK (category IN ('general', 'deportes', 'eventos', 'comunicado')),
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE, -- “Favorito”: se muestra en la portada.
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- La columna video_url también se agrega a bases ya existentes (idempotente).
+-- Estas columnas también se agregan a bases ya existentes de forma idempotente.
 ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS video_url TEXT;
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- GALLERIES TABLE (Community Albums)
 CREATE TABLE IF NOT EXISTS public.galleries (
@@ -1012,10 +1014,14 @@ CREATE TABLE IF NOT EXISTS public.businesses (
     logo_url    TEXT,
     image_url   TEXT,
     is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE, -- “Favorito”: se muestra en el carrusel de la portada.
     sort_order  INTEGER NOT NULL DEFAULT 0,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Columna añadida a bases ya existentes (idempotente).
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_businesses_active_order ON public.businesses(is_active, sort_order);
 
@@ -1191,17 +1197,17 @@ JOIN (VALUES
 ON CONFLICT DO NOTHING;
 
 -- Comercios (imágenes temporales; se reemplazan desde el panel).
-INSERT INTO public.businesses (name, category, description, phone, address, image_url, sort_order)
+INSERT INTO public.businesses (name, category, description, phone, address, image_url, sort_order, is_featured)
 SELECT * FROM (VALUES
-  ('Bodega Doña Rosa','tienda','Abarrotes, bebidas y artículos de primera necesidad.', '999 111 222','Pabellón A - Tienda 1','https://picsum.photos/seed/uv3-tienda/800/600',1),
-  ('Farmacia San Martín','farmacia','Medicamentos, cuidado personal y atención al vecino.', '999 222 333','Pabellón A - Tienda 2','https://picsum.photos/seed/uv3-farmacia/800/600',2),
-  ('Puesto de Mercado Central','mercado','Frutas, verduras y productos frescos de la feria.', '999 333 444','Plaza central','https://picsum.photos/seed/uv3-mercado/800/600',3),
-  ('Pollería El Vecino','restaurante','Pollo a la brasa y platos de menú del día.', '999 444 555','Pabellón B - Local 4','https://picsum.photos/seed/uv3-polleria/800/600',4),
-  ('Panadería Los Aromas','restaurante','Pan fresco, pasteles y desayunos.', '999 555 666','Pabellón B - Local 5','https://picsum.photos/seed/uv3-panaderia/800/600',5),
-  ('Peluquería Estilo','servicio','Corte, peinados y arreglo personal.', '999 666 777','Pabellón C - Local 1','https://picsum.photos/seed/uv3-peluqueria/800/600',6),
-  ('Bazar y Librería Escolar','tienda','Útiles escolares, útiles y regalos.', '999 777 888','Pabellón C - Local 2','https://picsum.photos/seed/uv3-bazar/800/600',7),
-  ('Taller Ferretero UV3','servicio','Ferretería, pintura y herramientas.', '999 888 999','Ingreso principal','https://picsum.photos/seed/uv3-ferreteria/800/600',8)
-) AS v(name,category,description,phone,address,image_url,sort_order)
+  ('Bodega Doña Rosa','tienda','Abarrotes, bebidas y artículos de primera necesidad.', '999 111 222','Pabellón A - Tienda 1','https://picsum.photos/seed/uv3-tienda/800/600',1,TRUE),
+  ('Farmacia San Martín','farmacia','Medicamentos, cuidado personal y atención al vecino.', '999 222 333','Pabellón A - Tienda 2','https://picsum.photos/seed/uv3-farmacia/800/600',2,TRUE),
+  ('Puesto de Mercado Central','mercado','Frutas, verduras y productos frescos de la feria.', '999 333 444','Plaza central','https://picsum.photos/seed/uv3-mercado/800/600',3,TRUE),
+  ('Pollería El Vecino','restaurante','Pollo a la brasa y platos de menú del día.', '999 444 555','Pabellón B - Local 4','https://picsum.photos/seed/uv3-polleria/800/600',4,TRUE),
+  ('Panadería Los Aromas','restaurante','Pan fresco, pasteles y desayunos.', '999 555 666','Pabellón B - Local 5','https://picsum.photos/seed/uv3-panaderia/800/600',5,FALSE),
+  ('Peluquería Estilo','servicio','Corte, peinados y arreglo personal.', '999 666 777','Pabellón C - Local 1','https://picsum.photos/seed/uv3-peluqueria/800/600',6,FALSE),
+  ('Bazar y Librería Escolar','tienda','Útiles escolares, útiles y regalos.', '999 777 888','Pabellón C - Local 2','https://picsum.photos/seed/uv3-bazar/800/600',7,FALSE),
+  ('Taller Ferretero UV3','servicio','Ferretería, pintura y herramientas.', '999 888 999','Ingreso principal','https://picsum.photos/seed/uv3-ferreteria/800/600',8,FALSE)
+) AS v(name,category,description,phone,address,image_url,sort_order,is_featured)
 WHERE NOT EXISTS (SELECT 1 FROM public.businesses);
 
 -- Configuración inicial del sitio (una sola fila).
@@ -1496,6 +1502,22 @@ WITH checks AS (
            SELECT 1 FROM information_schema.columns
            WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'video_url'
          )
+
+  UNION ALL
+
+  SELECT 'columna', 'announcements.is_featured',
+         EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'is_featured'
+         )
+
+  UNION ALL
+
+  SELECT 'columna', 'businesses.is_featured',
+         EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'businesses' AND column_name = 'is_featured'
+         )
 )
 SELECT tipo, objeto, CASE WHEN ok THEN 'OK' ELSE 'FALTA' END AS estado
 FROM checks
@@ -1672,10 +1694,10 @@ VALUES
 -- =========================================================================
 -- 9. COMUNICADOS (announcements)
 -- =========================================================================
-INSERT INTO public.announcements (title, content, author_id, category)
+INSERT INTO public.announcements (title, content, author_id, category, image_url, is_featured)
 VALUES
-    ('Gran Convocatoria al Campeonato Apertura 2026', 'Se convoca a todos los delegados de los bloques de la UV3 a la reunión informativa este viernes a las 8:00 PM en el local comunal para definir las bases y sorteo del fixture.', 'b2222222-2222-4222-8222-222222222222', 'deportes'),
-    ('Mantenimiento Programado de Cancha Principal', 'Vecinos, les informamos que la Cancha Sintetica Principal estará cerrada por mantenimiento de césped e iluminación desde el lunes 1 de junio hasta el miércoles 3 de junio. Agradecemos su comprensión.', 'a1111111-1111-4111-8111-111111111111', 'comunicado');
+    ('Gran Convocatoria al Campeonato Apertura 2026', 'Se convoca a todos los delegados de los bloques de la UV3 a la reunión informativa este viernes a las 8:00 PM en el local comunal para definir las bases y sorteo del fixture.', 'b2222222-2222-4222-8222-222222222222', 'deportes', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200', TRUE),
+    ('Mantenimiento Programado de Cancha Principal', 'Vecinos, les informamos que la Cancha Sintetica Principal estará cerrada por mantenimiento de césped e iluminación desde el lunes 1 de junio hasta el miércoles 3 de junio. Agradecemos su comprensión.', 'a1111111-1111-4111-8111-111111111111', 'comunicado', 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1200', TRUE);
 
 -- =========================================================================
 -- 10. GALERÍA (galleries)

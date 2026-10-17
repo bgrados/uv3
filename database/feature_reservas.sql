@@ -292,10 +292,14 @@ CREATE TABLE IF NOT EXISTS public.businesses (
     logo_url    TEXT,
     image_url   TEXT,
     is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE, -- “Favorito”: se muestra en el carrusel de la portada.
     sort_order  INTEGER NOT NULL DEFAULT 0,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Columna añadida a bases ya existentes (idempotente).
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_businesses_active_order ON public.businesses(is_active, sort_order);
 
@@ -471,17 +475,17 @@ JOIN (VALUES
 ON CONFLICT DO NOTHING;
 
 -- Comercios (imágenes temporales; se reemplazan desde el panel).
-INSERT INTO public.businesses (name, category, description, phone, address, image_url, sort_order)
+INSERT INTO public.businesses (name, category, description, phone, address, image_url, sort_order, is_featured)
 SELECT * FROM (VALUES
-  ('Bodega Doña Rosa','tienda','Abarrotes, bebidas y artículos de primera necesidad.', '999 111 222','Pabellón A - Tienda 1','https://picsum.photos/seed/uv3-tienda/800/600',1),
-  ('Farmacia San Martín','farmacia','Medicamentos, cuidado personal y atención al vecino.', '999 222 333','Pabellón A - Tienda 2','https://picsum.photos/seed/uv3-farmacia/800/600',2),
-  ('Puesto de Mercado Central','mercado','Frutas, verduras y productos frescos de la feria.', '999 333 444','Plaza central','https://picsum.photos/seed/uv3-mercado/800/600',3),
-  ('Pollería El Vecino','restaurante','Pollo a la brasa y platos de menú del día.', '999 444 555','Pabellón B - Local 4','https://picsum.photos/seed/uv3-polleria/800/600',4),
-  ('Panadería Los Aromas','restaurante','Pan fresco, pasteles y desayunos.', '999 555 666','Pabellón B - Local 5','https://picsum.photos/seed/uv3-panaderia/800/600',5),
-  ('Peluquería Estilo','servicio','Corte, peinados y arreglo personal.', '999 666 777','Pabellón C - Local 1','https://picsum.photos/seed/uv3-peluqueria/800/600',6),
-  ('Bazar y Librería Escolar','tienda','Útiles escolares, útiles y regalos.', '999 777 888','Pabellón C - Local 2','https://picsum.photos/seed/uv3-bazar/800/600',7),
-  ('Taller Ferretero UV3','servicio','Ferretería, pintura y herramientas.', '999 888 999','Ingreso principal','https://picsum.photos/seed/uv3-ferreteria/800/600',8)
-) AS v(name,category,description,phone,address,image_url,sort_order)
+  ('Bodega Doña Rosa','tienda','Abarrotes, bebidas y artículos de primera necesidad.', '999 111 222','Pabellón A - Tienda 1','https://picsum.photos/seed/uv3-tienda/800/600',1,TRUE),
+  ('Farmacia San Martín','farmacia','Medicamentos, cuidado personal y atención al vecino.', '999 222 333','Pabellón A - Tienda 2','https://picsum.photos/seed/uv3-farmacia/800/600',2,TRUE),
+  ('Puesto de Mercado Central','mercado','Frutas, verduras y productos frescos de la feria.', '999 333 444','Plaza central','https://picsum.photos/seed/uv3-mercado/800/600',3,TRUE),
+  ('Pollería El Vecino','restaurante','Pollo a la brasa y platos de menú del día.', '999 444 555','Pabellón B - Local 4','https://picsum.photos/seed/uv3-polleria/800/600',4,TRUE),
+  ('Panadería Los Aromas','restaurante','Pan fresco, pasteles y desayunos.', '999 555 666','Pabellón B - Local 5','https://picsum.photos/seed/uv3-panaderia/800/600',5,FALSE),
+  ('Peluquería Estilo','servicio','Corte, peinados y arreglo personal.', '999 666 777','Pabellón C - Local 1','https://picsum.photos/seed/uv3-peluqueria/800/600',6,FALSE),
+  ('Bazar y Librería Escolar','tienda','Útiles escolares, útiles y regalos.', '999 777 888','Pabellón C - Local 2','https://picsum.photos/seed/uv3-bazar/800/600',7,FALSE),
+  ('Taller Ferretero UV3','servicio','Ferretería, pintura y herramientas.', '999 888 999','Ingreso principal','https://picsum.photos/seed/uv3-ferreteria/800/600',8,FALSE)
+) AS v(name,category,description,phone,address,image_url,sort_order,is_featured)
 WHERE NOT EXISTS (SELECT 1 FROM public.businesses);
 
 -- Configuración inicial del sitio (una sola fila).

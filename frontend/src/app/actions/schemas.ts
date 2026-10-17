@@ -62,6 +62,7 @@ export const businessSchema = z.object({
   logo_url: z.string().optional().nullable(),
   image_url: z.string().optional().nullable(),
   is_active: z.coerce.boolean().default(true),
+  is_featured: z.coerce.boolean().default(false),
   sort_order: z.coerce.number().int().min(0).max(999).default(0),
 });
 
@@ -175,6 +176,7 @@ export const announcementSchema = z.object({
     .optional()
     .or(z.literal(''))
     .nullable(),
+  is_featured: z.coerce.boolean().default(false),
 });
 
 export type AnnouncementFormValues = z.infer<typeof announcementSchema>;
