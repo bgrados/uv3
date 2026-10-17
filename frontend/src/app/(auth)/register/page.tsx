@@ -1,10 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/auth/actions';
 
-export default function RegisterPage() {
+const ROLE_LABEL: Record<string, string> = {
+  delegate: 'Delegado',
+  referee: 'Árbitro',
+  organizer: 'Organizador',
+};
+
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const rol = searchParams.get('rol') ?? '';
+  const rolLabel = ROLE_LABEL[rol];
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,6 +33,11 @@ export default function RegisterPage() {
       <h2 className="mb-2 text-center font-heading text-2xl font-bold text-gray-900">Crear cuenta</h2>
       <p className="mb-6 text-center text-sm text-muted">Únete a la comunidad UV3</p>
 
+      {rolLabel && (
+        <div className="mb-4 rounded-lg border border-uv3-green/20 bg-uv3-green/5 p-3 text-sm text-stone-700">
+          Te estás registrando como <strong>{rolLabel}</strong>. Después de crear tu cuenta, el administrador la aprobará y le asignará el rol correspondiente.
+        </div>
+      )}
       {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-destructive">{error}</div>}
 
       <form action={handleSubmit} className="space-y-4">
@@ -99,5 +114,13 @@ export default function RegisterPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="text-center text-sm text-muted">Cargando...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

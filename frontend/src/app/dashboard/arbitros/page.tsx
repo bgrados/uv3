@@ -34,10 +34,36 @@ export default async function ArbitrosPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10">
       <h1 className="font-heading text-3xl font-bold text-uv3-green-dark">Árbitros</h1>
       <p className="mt-2 text-stone-600">
-        Gestiona los árbitros. Un árbitro se crea promoviendo a un usuario al rol <strong>Árbitro</strong> en
-        <Link href="/dashboard/usuarios" className="ml-1 font-semibold text-uv3-green hover:underline">Usuarios y roles</Link>.
-        Luego se asigna a un partido en <Link href="/dashboard/matches" className="font-semibold text-uv3-green hover:underline">Partidos</Link>.
+        Gestiona los árbitros. Un árbitro es una persona que dirige partidos; para crear uno, primero se registra una cuenta
+        y luego se promueve a rol <strong>Árbitro</strong>.
       </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <a
+          href="/register?rol=referee"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg bg-uv3-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-uv3-green-dark"
+        >
+          + Registrar nuevo árbitro
+        </a>
+        <Link href="/dashboard/usuarios" className="text-sm font-semibold text-uv3-green hover:underline">
+          Promover a Árbitro en Usuarios y roles →
+        </Link>
+        <Link href="/dashboard/matches" className="text-sm font-semibold text-uv3-green hover:underline">
+          Asignar a partido en Partidos →
+        </Link>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-uv3-green/20 bg-uv3-green/5 px-4 py-3 text-sm text-stone-700">
+        <p className="font-semibold text-uv3-green-dark">Guía rápida</p>
+        <ol className="mt-1 list-decimal pl-5 space-y-1">
+          <li>Haz clic en <strong>“Registrar nuevo árbitro”</strong> (se abre el registro en una nueva pestaña).</li>
+          <li>La persona crea su cuenta con su correo y contraseña.</li>
+          <li>En <strong>Usuarios y roles</strong>, promueve esa cuenta a rol <strong>Árbitro</strong>.</li>
+          <li>En <strong>Partidos</strong>, edita el partido y selecciona al árbitro en el campo correspondiente.</li>
+        </ol>
+      </div>
 
       <section className="mt-6">
         {(referees ?? []).length === 0 ? (

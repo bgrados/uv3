@@ -29,10 +29,36 @@ export default async function DelegadosPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10">
       <h1 className="font-heading text-3xl font-bold text-uv3-green-dark">Delegados</h1>
       <p className="mt-2 text-stone-600">
-        Gestiona los delegados de equipos. Un delegado se crea promoviendo a un usuario al rol <strong>Delegado</strong> en
-        <Link href="/dashboard/usuarios" className="ml-1 font-semibold text-uv3-green hover:underline">Usuarios y roles</Link>.
-        Luego se asigna a un equipo en <Link href="/dashboard/teams" className="font-semibold text-uv3-green hover:underline">Equipos</Link>.
+        Gestiona los delegados de equipos. Un delegado es una persona que representa a un equipo; para crear uno, primero se registra
+        una cuenta y luego se promueve a rol <strong>Delegado</strong>.
       </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <a
+          href="/register?rol=delegate"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg bg-uv3-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-uv3-green-dark"
+        >
+          + Registrar nuevo delegado
+        </a>
+        <Link href="/dashboard/usuarios" className="text-sm font-semibold text-uv3-green hover:underline">
+          Promover a Delegado en Usuarios y roles →
+        </Link>
+        <Link href="/dashboard/teams" className="text-sm font-semibold text-uv3-green hover:underline">
+          Asignar a equipo en Equipos →
+        </Link>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-uv3-green/20 bg-uv3-green/5 px-4 py-3 text-sm text-stone-700">
+        <p className="font-semibold text-uv3-green-dark">Guía rápida</p>
+        <ol className="mt-1 list-decimal pl-5 space-y-1">
+          <li>Haz clic en <strong>“Registrar nuevo delegado”</strong> (se abre el registro en una nueva pestaña).</li>
+          <li>La persona crea su cuenta con su correo y contraseña.</li>
+          <li>En <strong>Usuarios y roles</strong>, promueve esa cuenta a rol <strong>Delegado</strong>.</li>
+          <li>En <strong>Equipos</strong>, edita el equipo y selecciona al delegado en “Delegado (opcional)”.</li>
+        </ol>
+      </div>
 
       <section className="mt-6">
         {(delegates ?? []).length === 0 ? (
