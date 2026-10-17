@@ -66,6 +66,14 @@ WITH checks AS (
            SELECT 1 FROM information_schema.columns
            WHERE table_schema = 'public' AND table_name = 'galleries' AND column_name = 'images'
          )
+
+  UNION ALL
+
+  SELECT 'columna', 'announcements.video_url',
+         EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'video_url'
+         )
 )
 SELECT tipo, objeto, CASE WHEN ok THEN 'OK' ELSE 'FALTA' END AS estado
 FROM checks

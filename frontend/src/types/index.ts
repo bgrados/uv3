@@ -255,6 +255,7 @@ export interface Announcement {
   title: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   author_id: string | null;
   category: 'general' | 'deportes' | 'eventos' | 'comunicado';
   author?: User;

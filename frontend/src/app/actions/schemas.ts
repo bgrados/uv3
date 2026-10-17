@@ -169,6 +169,12 @@ export const announcementSchema = z.object({
   content: z.string().min(10, 'El contenido debe tener al menos 10 caracteres.'),
   category: z.enum(ANNOUNCEMENT_CATEGORIES, { message: 'Selecciona una categoría válida.' }).default('general'),
   image_url: z.string().optional().nullable(),
+  video_url: z
+    .string()
+    .url('El enlace del video no es válido (debe empezar por https://).')
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
 });
 
 export type AnnouncementFormValues = z.infer<typeof announcementSchema>;

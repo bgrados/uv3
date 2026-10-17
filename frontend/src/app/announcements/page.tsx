@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
+import { getVideoEmbed } from '@/utils/site';
 import type { Announcement } from '@/types';
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -8,6 +9,48 @@ const CATEGORY_LABEL: Record<string, string> = {
   eventos: 'Eventos',
   comunicado: 'Comunicado',
 };
+
+function VideoBlock({ url }: { url: string }) {
+  const embed = getVideoEmbed(url);
+  if (!embed) return null;
+
+  if (embed.kind === 'iframe') {
+    return (
+      <div className="relative aspect-video w-full bg-black">
+        <iframe
+          src={embed.src}
+          title="Video del comunicado"
+          className="absolute inset-0 h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  if (embed.kind === 'file') {
+    return (
+      <video controls preload="metadata" className="w-full bg-black">
+        <source src={embed.src} />
+        Tu navegador no puede reproducir este video.
+      </video>
+    );
+  }
+
+  return (
+    <div className="border-b border-gray-100 px-6 py-3">
+      <a
+        href={embed.src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm font-semibold text-uv3-green hover:underline"
+      >
+        ▶ Ver video
+      </a>
+    </div>
+  );
+}
 
 export default async function AnnouncementsPage() {
   const supabase = await createClient();
@@ -71,6 +114,8 @@ export default async function AnnouncementsPage() {
                   {item.content}
                 </p>
               </div>
+
+              {item.video_url && <VideoBlock url={item.video_url} />}
             </article>
           ))}
         </div>

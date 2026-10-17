@@ -43,3 +43,46 @@ export function whatsappLink(number: string | null | undefined, text?: string): 
   const query = text ? `?text=${encodeURIComponent(text)}` : '';
   return `https://wa.me/${normalized}${query}`;
 }
+
+// --- Video externo (YouTube / Facebook / Vimeo / archivo directo) ------------
+
+export type VideoEmbed =
+  | { kind: 'iframe'; src: string }
+  | { kind: 'file'; src: string }
+  | { kind: 'link'; src: string };
+
+/**
+ * Convierte un enlace pegado por el usuario en algo reproducible en la web.
+ * Los videos NO se alojan en Supabase: sólo se guarda el enlace externo.
+ * Soporta YouTube (watch/shorts/youtu.be/embed), Facebook (facebook.com/fb.watch),
+ * Vimeo, archivos directos (.mp4/.webm/.ogg/.mov) y, como último recurso, un enlace.
+ */
+export function getVideoEmbed(raw: string | null | undefined): VideoEmbed | null {
+  if (!raw) return null;
+  const url = raw.trim();
+  if (!url) return null;
+
+  // YouTube
+  const yt = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/
+  );
+  if (yt) return { kind: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
+
+  // Facebook (incluye fb.watch); se usa el plugin oficial de video.
+  if (/(?:^|\.)(facebook\.com|fb\.watch)/i.test(url)) {
+    return {
+      kind: 'iframe',
+      src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&width=560`,
+    };
+  }
+
+  // Vimeo
+  const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeo) return { kind: 'iframe', src: `https://player.vimeo.com/video/${vimeo[1]}` };
+
+  // Archivo de video directo alojado en otro servidor.
+  if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(url)) return { kind: 'file', src: url };
+
+  // Cualquier otro enlace: se muestra como enlace externo.
+  return { kind: 'link', src: url };
+}

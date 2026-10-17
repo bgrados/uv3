@@ -147,11 +147,15 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     image_url TEXT,
+    video_url TEXT, -- Enlace externo (YouTube/Facebook/Vimeo): no se aloja en Supabase.
     author_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     category TEXT NOT NULL DEFAULT 'general' CHECK (category IN ('general', 'deportes', 'eventos', 'comunicado')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- La columna video_url también se agrega a bases ya existentes (idempotente).
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS video_url TEXT;
 
 -- GALLERIES TABLE (Community Albums)
 CREATE TABLE IF NOT EXISTS public.galleries (

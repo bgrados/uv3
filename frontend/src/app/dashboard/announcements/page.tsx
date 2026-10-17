@@ -67,6 +67,20 @@ function AnnouncementFields({ announcement }: { announcement?: Announcement }) {
         label="Imagen (opcional)"
         initialValue={announcement?.image_url ?? ''}
       />
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-gray-700">Video (opcional)</span>
+        <input
+          name="video_url"
+          type="url"
+          defaultValue={announcement?.video_url ?? ''}
+          placeholder="https://www.youtube.com/watch?v=… o https://www.facebook.com/…"
+          className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green"
+        />
+        <span className="text-xs text-stone-400">
+          Pega el enlace de YouTube, Facebook, Vimeo o un .mp4 externo. El video no se sube a Supabase: solo se guarda
+          el enlace.
+        </span>
+      </label>
     </div>
   );
 }
