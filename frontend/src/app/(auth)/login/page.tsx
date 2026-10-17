@@ -28,7 +28,7 @@ function LoginForm() {
         Panel de Control UV3
       </h2>
       <p className="mb-6 text-center text-sm text-muted">
-        Acceso para administradores, organizadores de torneos y árbitros
+        Acceso para administradores, organizadores, árbitros y delegados
       </p>
 
       {message && (

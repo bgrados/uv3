@@ -199,3 +199,93 @@ export const noticeSchema = z.object({
 });
 
 export type NoticeFormValues = z.infer<typeof noticeSchema>;
+
+// --- Junta Vecinal ----------------------------------------------------------
+export const BOARD_POSITIONS = [
+  'presidente',
+  'vicepresidente',
+  'fiscal',
+  'secretario',
+  'tesorero',
+  'vocal_educacion',
+  'vocal_ecologia',
+  'vocal_deportes',
+  'otro',
+] as const;
+
+export const BOARD_POSITION_LABEL: Record<(typeof BOARD_POSITIONS)[number], string> = {
+  presidente: 'Presidente',
+  vicepresidente: 'Vicepresidente',
+  fiscal: 'Fiscal',
+  secretario: 'Secretario',
+  tesorero: 'Tesorero',
+  vocal_educacion: 'Vocal de Educación',
+  vocal_ecologia: 'Vocal de Ecología',
+  vocal_deportes: 'Vocal de Deportes',
+  otro: 'Otro',
+};
+
+export const boardMemberSchema = z.object({
+  position: z.enum(BOARD_POSITIONS, { message: 'Selecciona un cargo válido.' }),
+  full_name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.').max(150),
+  photo_url: z.string().optional().nullable(),
+  bio: z.string().max(600, 'La reseña es demasiado larga.').optional().nullable(),
+  email: z.string().email('Correo inválido.').optional().or(z.literal('')).nullable(),
+  phone: z.string().max(40).optional().nullable(),
+  period: z.string().max(40).optional().nullable(),
+  is_active: z.coerce.boolean().default(true),
+  sort_order: z.coerce.number().int().min(0).max(999).default(0),
+});
+
+export type BoardMemberFormValues = z.infer<typeof boardMemberSchema>;
+
+// --- Tesorería / Transparencia ----------------------------------------------
+export const TREASURY_KINDS = ['ingreso', 'egreso'] as const;
+export const TREASURY_KIND_LABEL: Record<(typeof TREASURY_KINDS)[number], string> = {
+  ingreso: 'Ingreso',
+  egreso: 'Egreso',
+};
+
+export const TREASURY_CATEGORIES = [
+  'cuotas',
+  'donaciones',
+  'eventos',
+  'deportes',
+  'mantenimiento',
+  'servicios',
+  'seguridad',
+  'educacion',
+  'ecologia',
+  'otros',
+] as const;
+
+export const TREASURY_CATEGORY_LABEL: Record<(typeof TREASURY_CATEGORIES)[number], string> = {
+  cuotas: 'Cuotas vecinales',
+  donaciones: 'Donaciones',
+  eventos: 'Eventos',
+  deportes: 'Deportes',
+  mantenimiento: 'Mantenimiento',
+  servicios: 'Servicios',
+  seguridad: 'Seguridad',
+  educacion: 'Educación',
+  ecologia: 'Ecología',
+  otros: 'Otros',
+};
+
+export const treasuryEntrySchema = z.object({
+  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida.'),
+  kind: z.enum(TREASURY_KINDS, { message: 'Selecciona ingreso o egreso.' }),
+  category: z.string().min(1, 'Selecciona una categoría.').max(40),
+  concept: z.string().min(3, 'Describe el movimiento.').max(200),
+  amount: z.coerce.number().min(0, 'El monto no puede ser negativo.').max(99999999),
+  receipt_url: z.string().optional().nullable(),
+  responsible_member_id: z
+    .string()
+    .uuid('Directivo inválido.')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  is_published: z.coerce.boolean().default(true),
+});
+
+export type TreasuryEntryFormValues = z.infer<typeof treasuryEntrySchema>;

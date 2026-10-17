@@ -1,3 +1,4 @@
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { createClient } from '@/utils/supabase/server';
 import { GalleryAlbum } from '@/components/GalleryAlbum';
 import type { Gallery } from '@/types';
@@ -20,6 +21,7 @@ export default async function GalleryPage() {
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-12">
+      <Breadcrumbs items={[{ label: 'Galería' }]} />
       <h1 className="mb-6 text-3xl font-semibold text-uv3-green-dark">Galería</h1>
 
       {albums.length === 0 ? (

@@ -1,4 +1,5 @@
 import { SmartImage } from '@/components/SmartImage';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import Link from 'next/link';
 import { getBusinessesAction } from '@/app/actions/businesses';
 import { BUSINESS_CATEGORY_LABEL } from '@/utils/site';
@@ -14,6 +15,7 @@ export default async function ComerciosPage() {
 
   return (
     <main className="min-h-screen bg-uv3-bg pb-16">
+      <Breadcrumbs items={[{ label: 'Comercios' }]} />
       <div className="bg-uv3-green-dark text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div>

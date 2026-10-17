@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { SportBadge } from '@/components/SportBadge';
@@ -129,13 +130,7 @@ export default async function TournamentDetailPage({ params }: PageProps) {
       {/* Tournament Header */}
       <div className="bg-gradient-to-br from-uv3-green-dark via-uv3-green to-emerald-600 text-white">
         <div className="mx-auto max-w-7xl px-6 py-10">
-          <nav className="mb-4 flex items-center gap-2 text-sm text-white/60">
-            <Link href="/" className="hover:text-white">Inicio</Link>
-            <span>›</span>
-            <Link href="/tournaments" className="hover:text-white">Campeonatos</Link>
-            <span>›</span>
-            <span className="text-white/80">{tournament.name}</span>
-          </nav>
+          <Breadcrumbs items={[{ label: 'Campeonatos', href: '/tournaments' }, { label: tournament.name }]} />
 
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { UV3SupabaseClient } from './types';
 import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from './config';
 
-const STAFF_ROLES = ['admin', 'organizer', 'referee'];
+const STAFF_ROLES = ['admin', 'organizer', 'referee', 'delegate'];
 const DASHBOARD_PREFIX = '/dashboard';
 // Rutas que redirigen al panel si el usuario ya tiene sesión de staff.
 // `/reset-password` queda fuera a propósito: se accede tras el enlace de
@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
   if (isDashboard && !isAuthorized) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('message', 'Acceso exclusivo para administradores, organizadores y árbitros.');
+    url.searchParams.set('message', 'Acceso exclusivo para administradores, organizadores, árbitros y delegados.');
     url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }

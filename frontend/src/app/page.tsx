@@ -318,6 +318,8 @@ export default async function HomePage() {
             <Link href="/gallery" className="hover:text-uv3-green transition-colors pb-1">Galería de Fotos</Link>
             <Link href="/reservas" className="hover:text-uv3-green transition-colors pb-1">Reservar Cancha</Link>
             <Link href="/comercios" className="hover:text-uv3-green transition-colors pb-1">Comercios</Link>
+            <Link href="/junta" className="hover:text-uv3-green transition-colors pb-1">Junta Vecinal</Link>
+            <Link href="/transparencia" className="hover:text-uv3-green transition-colors pb-1">Transparencia</Link>
             <a 
               href="https://www.facebook.com/profile.php?id=61564444126122" 
               target="_blank" 

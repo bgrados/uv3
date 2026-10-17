@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { createClient } from '@/utils/supabase/server';
 import type { Tournament } from '@/types';
 import { SportBadge } from '@/components/SportBadge';
@@ -27,6 +28,7 @@ export default async function TournamentsPage() {
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-12">
+      <Breadcrumbs items={[{ label: 'Campeonatos' }]} />
       <h2 className="mb-6 text-3xl font-semibold text-uv3-green-dark">Campeonatos</h2>
 
       {tournaments.length === 0 ? (

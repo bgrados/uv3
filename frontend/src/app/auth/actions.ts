@@ -57,7 +57,7 @@ export async function loginAction(formData: FormData): Promise<ActionResponse> {
     return {
       success: false,
       error:
-        'Tu cuenta no tiene permisos para el panel administrativo (se requiere rol de administrador, organizador o árbitro).',
+        'Tu cuenta no tiene permisos para el panel administrativo (se requiere rol autorizado).',
     };
   }
 

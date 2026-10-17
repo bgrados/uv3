@@ -78,7 +78,7 @@ const SHORTCUTS: Shortcut[] = [
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  if (!user || !['admin', 'organizer', 'referee'].includes(user.role)) {
+  if (!user || !['admin', 'organizer', 'referee', 'delegate'].includes(user.role)) {
     redirect('/login?message=Acceso restringido a personal autorizado.');
   }
 
@@ -129,8 +129,9 @@ export default async function DashboardPage() {
           ¡Hola, {user.full_name?.split(' ')[0] || user.username || 'vecino'}! 👋
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/85">
-          Desde aquí gestionas todo el portal de la Unidad Vecinal 3: deportes, contenidos y la información que ven los
-          vecinos en la portada.
+          {user.role === 'delegate'
+            ? 'Desde aquí puedes gestionar tu equipo y su plantilla.'
+            : 'Desde aquí gestionas todo el portal de la Unidad Vecinal 3: deportes, contenidos y la información que ven los vecinos en la portada.'}
         </p>
       </section>
 

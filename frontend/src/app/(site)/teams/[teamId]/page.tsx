@@ -1,5 +1,5 @@
 import { SmartImage } from '@/components/SmartImage';
-import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import type { Player, Team } from '@/types';
@@ -45,13 +45,7 @@ export default async function PublicTeamPage({ params }: PageProps) {
 
   return (
     <section className="mx-auto max-w-5xl px-6 py-12">
-      <nav className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/teams" className="hover:text-uv3-green-dark">
-          Equipos
-        </Link>
-        <span>›</span>
-        <span className="font-semibold text-uv3-green-dark">{team.name}</span>
-      </nav>
+      <Breadcrumbs items={[{ label: 'Equipos', href: '/teams' }, { label: team.name }]} />
 
       <header className="flex flex-wrap items-center gap-5 rounded-2xl bg-gradient-to-br from-uv3-green-dark to-uv3-green p-8 text-white shadow-lg">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border-2 border-white/30 bg-white/10">
