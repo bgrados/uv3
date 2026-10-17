@@ -224,8 +224,6 @@ export default async function HomePage() {
           <div className="flex items-center gap-4 text-[11px] tracking-wider uppercase text-white/90">
             <span>🇵🇪 Cercado de Lima, Perú</span>
             <span className="hidden md:inline">•</span>
-            <span>Edición Digital Nº 124</span>
-            <span className="hidden md:inline">•</span>
             <span>Junta General de Propietarios UV3</span>
           </div>
           <div className="flex items-center gap-4 font-semibold">
