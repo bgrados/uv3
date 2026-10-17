@@ -6,12 +6,14 @@
 -- Comunicados ficticios
 INSERT INTO public.announcements (title, content, category, is_featured, image_url)
 SELECT * FROM (VALUES
-  ('Asamblea general de propietarios: mejoras en iluminación y seguridad', 'La Junta General de Propietarios convoca a todos los delegados de bloques a la asamblea ordinaria del próximo viernes a las 20:00 h en el local comunal. Se tratarán presupuesto anual, mejoras en iluminación de áreas verdes y avances de la digitalización vecinal.', 'general', true, NULL),
-  ('Mantenimiento preventivo de la cancha sintética principal', 'Se informa que la cancha sintética estará cerrada por trabajos de nivelación e iluminación del lunes al miércoles de la próxima semana. Agradecemos la comprensión de equipos y vecinos.', 'comunicado', false, NULL),
-  ('Gran éxito en la campaña vecinal de salud y vacunación familiar', 'En coordinación con la municipalidad y el centro de salud local se atendió a más de 300 familias en la losa deportiva del Sector A. Gracias a los voluntarios vecinales.', 'eventos', false, NULL),
-  ('Requisitos y entrega de credenciales para el Campeonato Apertura 2026', 'La comisión organizadora anuncia la apertura del padrón de registro y entrega de credenciales para delegados acreditados. Trámite en la oficina de deportes los martes de 18:00 a 20:00 h.', 'deportes', true, NULL),
-  ('Nuevo horario de atención de la oficina vecinal', 'A partir de esta semana, la oficina de la Junta atenderá de lunes a viernes de 17:00 a 20:00 h. Se reciben reclamos de mantenimiento, seguridad y deportes.', 'general', false, NULL),
-  ('Festival cultural y feria de emprendimientos vecinales', 'Este sábado se realizará el festival cultural en el parque central con feria de emprendimientos, música y actividades para niños. Todos los vecinos están invitados.', 'eventos', false, NULL)
+  ('Asamblea general de propietarios: mejoras en iluminación y seguridad', 'La Junta General de Propietarios convoca a todos los delegados de bloques a la asamblea ordinaria del próximo viernes a las 20:00 h en el local comunal. Se tratarán presupuesto anual, mejoras en iluminación de áreas verdes y avances de la digitalización vecinal.', 'general', true, '/uv3-news-1.jpg'),
+  ('Mantenimiento preventivo de la cancha sintética principal', 'Se informa que la cancha sintética estará cerrada por trabajos de nivelación e iluminación del lunes al miércoles de la próxima semana. Agradecemos la comprensión de equipos y vecinos.', 'comunicado', false, '/uv3-news-2.jpg'),
+  ('Gran éxito en la campaña vecinal de salud y vacunación familiar', 'En coordinación con la municipalidad y el centro de salud local se atendió a más de 300 familias en la losa deportiva del Sector A. Gracias a los voluntarios vecinales.', 'eventos', false, '/uv3-news-1.jpg'),
+  ('Requisitos y entrega de credenciales para el Campeonato Apertura 2026', 'La comisión organizadora anuncia la apertura del padrón de registro y entrega de credenciales para delegados acreditados. Trámite en la oficina de deportes los martes de 18:00 a 20:00 h.', 'deportes', true, '/uv3-news-2.jpg'),
+  ('Nuevo horario de atención de la oficina vecinal', 'A partir de esta semana, la oficina de la Junta atenderá de lunes a viernes de 17:00 a 20:00 h. Se reciben reclamos de mantenimiento, seguridad y deportes.', 'general', false, '/uv3-news-1.jpg'),
+  ('Festival cultural y feria de emprendimientos vecinales', 'Este sábado se realizará el festival cultural en el parque central con feria de emprendimientos, música y actividades para niños. Todos los vecinos están invitados.', 'eventos', false, '/uv3-news-2.jpg'),
+  ('Renovación de áreas verdes en los bloques 4 y 5', 'Se iniciaron los trabajos de renovación de jardines y siembra de árboles en los bloques 4 y 5. Se solicita a los vecinos no pisar las áreas en recuperación.', 'general', false, '/uv3-news-1.jpg'),
+  ('Entrega de credenciales para el torneo de fútbol sala', 'La comisión de deportes entrega credenciales para el torneo de fútbol sala los jueves de 18:00 a 20:00 h en la oficina vecinal.', 'deportes', false, '/uv3-news-2.jpg')
 ) AS v(title, content, category, is_featured, image_url)
 WHERE NOT EXISTS (SELECT 1 FROM public.announcements a WHERE a.title = v.title);
 
@@ -37,6 +39,14 @@ SELECT * FROM (VALUES
   ('Panadería La Espiga', 'tienda', 'Pan fresco, pasteles y bocaditos todos los días.', '999666777', '999666777', 'Block 4, local 20', true, true, 15)
 ) AS v(name, category, description, phone, whatsapp, address, is_active, is_featured, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.businesses b WHERE b.name = v.name);
+
+-- Asignar imágenes a comunicados existentes sin imagen
+UPDATE public.announcements
+SET image_url = CASE
+  WHEN is_featured THEN '/uv3-news-1.jpg'
+  ELSE '/uv3-news-2.jpg'
+END
+WHERE image_url IS NULL;
 
 -- ============================================================================
 -- FIN

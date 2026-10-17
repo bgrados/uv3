@@ -21,6 +21,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/dashboard/tournaments', label: 'Torneos', icon: '🏆' },
       { href: '/dashboard/matches', label: 'Partidos', icon: '⚽' },
       { href: '/dashboard/teams', label: 'Equipos', icon: '👥' },
+      { href: '/dashboard/delegados', label: 'Delegados', icon: '📋' },
+      { href: '/dashboard/arbitros', label: 'Árbitros', icon: '🚩' },
     ],
   },
   {
