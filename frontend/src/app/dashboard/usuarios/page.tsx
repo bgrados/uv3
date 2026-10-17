@@ -33,6 +33,14 @@ export default async function UsuariosPage({
       <p className="mt-2 text-stone-600">
         Asigna el rol (Vecino, Delegado, Árbitro, Organizador o Administrador) a las personas que ya se registraron.
       </p>
+      <div className="mt-4 rounded-lg border border-uv3-green/20 bg-uv3-green/5 px-4 py-3 text-sm text-stone-700">
+        <p className="font-semibold text-uv3-green-dark">Guía rápida</p>
+        <ul className="mt-1 list-disc pl-5 space-y-1">
+          <li>Los <strong>delegados</strong> se crean aquí (rol Delegado) y luego se asignan a un equipo en <strong>Equipos</strong>.</li>
+          <li>Los <strong>árbitros</strong> se crean aquí (rol Árbitro) y luego se asignan a un partido en <strong>Partidos</strong>.</li>
+          <li>Los usuarios deben registrarse primero desde <strong>/register</strong>; aquí solo se promueve su rol.</li>
+        </ul>
+      </div>
 
       {ok && <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">✅ {ok}</div>}
       {error && <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">⚠️ {error}</div>}

@@ -91,6 +91,13 @@ export default async function TeamsAdminPage({ searchParams }: PageProps) {
         </div>
       )}
 
+      <div className="mb-6 rounded-lg border border-uv3-green/20 bg-uv3-green/5 px-4 py-3 text-sm text-stone-700">
+        <p className="font-semibold text-uv3-green-dark">Guía rápida</p>
+        <p className="mt-1">
+          Crea primero los usuarios con rol <strong>Delegado</strong> en <strong>Usuarios y roles</strong>. Luego, al crear un equipo, selecciónalo en “Delegado (opcional)”. Los delegados solo ven su propio equipo.
+        </p>
+      </div>
+
       <section className={`grid gap-6 ${isDelegate ? '' : 'lg:grid-cols-[0.9fr_1.1fr]'}`}>
         {!isDelegate && (
           <form action={createTeamFormAction} className="h-fit rounded-xl border bg-white p-6 shadow-sm">

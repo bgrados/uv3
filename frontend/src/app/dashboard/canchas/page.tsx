@@ -127,6 +127,12 @@ export default async function CanchasPage({
       <p className="mt-2 text-stone-600">
         Define tarifas (día/noche), deportes admitidos y la foto de cada espacio. Todo se refleja en la página pública de reservas.
       </p>
+      <div className="mt-4 rounded-lg border border-uv3-green/20 bg-uv3-green/5 px-4 py-3 text-sm text-stone-700">
+        <p className="font-semibold text-uv3-green-dark">Guía rápida</p>
+        <p className="mt-1">
+          Cada espacio creado aquí aparece en la página pública <strong>/reservas</strong>. Los cambios de tarifas y deportes se aplican de inmediato.
+        </p>
+      </div>
 
       {ok && <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">✅ {ok}</div>}
       {error && <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">⚠️ {error}</div>}
