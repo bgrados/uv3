@@ -29,12 +29,12 @@ WHERE NOT EXISTS (SELECT 1 FROM public.notices n WHERE n.title = v.title);
 -- Comercios ficticios adicionales
 INSERT INTO public.businesses (name, category, description, phone, whatsapp, address, is_active, is_featured, sort_order)
 SELECT * FROM (VALUES
-  ('Bodega El Vecino', 'bodega', 'Abarrotes, bebidas y productos de primera necesidad. Atención todos los días.', '999111222', '999111222', 'Block 3, local 12', true, false, 10),
+  ('Bodega El Vecino', 'tienda', 'Abarrotes, bebidas y productos de primera necesidad. Atención todos los días.', '999111222', '999111222', 'Block 3, local 12', true, false, 10),
   ('Farmacia Salud UV3', 'farmacia', 'Medicamentos, insumos médicos y atención farmacéutica.', '999222333', '999222333', 'Block 5, local 8', true, true, 11),
   ('Pollería El Dorado', 'restaurante', 'Pollos a la brasa y platos criollos. Delivery disponible.', '999333444', '999333444', 'Block 7, local 3', true, false, 12),
-  ('Ferretería El Constructor', 'ferreteria', 'Materiales de construcción, herramientas y pinturas.', '999444555', '999444555', 'Block 2, local 15', true, false, 13),
-  ('Salón de Belleza Estilo', 'servicios', 'Cortes, tintes y tratamientos capilares.', '999555666', '999555666', 'Block 9, local 6', true, false, 14),
-  ('Panadería La Espiga', 'panaderia', 'Pan fresco, pasteles y bocaditos todos los días.', '999666777', '999666777', 'Block 4, local 20', true, true, 15)
+  ('Ferretería El Constructor', 'tienda', 'Materiales de construcción, herramientas y pinturas.', '999444555', '999444555', 'Block 2, local 15', true, false, 13),
+  ('Salón de Belleza Estilo', 'servicio', 'Cortes, tintes y tratamientos capilares.', '999555666', '999555666', 'Block 9, local 6', true, false, 14),
+  ('Panadería La Espiga', 'tienda', 'Pan fresco, pasteles y bocaditos todos los días.', '999666777', '999666777', 'Block 4, local 20', true, true, 15)
 ) AS v(name, category, description, phone, whatsapp, address, is_active, is_featured, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM public.businesses b WHERE b.name = v.name);
 
