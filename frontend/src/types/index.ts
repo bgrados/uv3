@@ -168,6 +168,64 @@ export interface Notice {
   updated_at: string;
 }
 
+// --- Directorio de la unidad (servicios del barrio) -------------------------
+
+export type CommunityServiceCategory =
+  | 'salud'
+  | 'seguridad'
+  | 'religioso'
+  | 'social'
+  | 'deporte'
+  | 'abasto'
+  | 'educacion'
+  | 'municipal'
+  | 'otro';
+
+export interface CommunityService {
+  id: string;
+  name: string;
+  category: CommunityServiceCategory;
+  icon: string | null;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  hours: string | null;
+  image_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Agenda de la comunidad -------------------------------------------------
+
+export type CommunityEventCategory =
+  | 'asamblea'
+  | 'deporte'
+  | 'salud'
+  | 'social'
+  | 'religioso'
+  | 'mantenimiento'
+  | 'otro';
+
+export interface CommunityEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  category: CommunityEventCategory;
+  image_url: string | null;
+  is_featured: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Configuración del sitio ----------------------------------------------
 
 export interface SiteSettings {

@@ -20,6 +20,8 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Comunidad',
     items: [
       { href: '/announcements', label: 'Comunicados' },
+      { href: '/agenda', label: 'Agenda' },
+      { href: '/servicios', label: 'Directorio de la Unidad' },
       { href: '/gallery', label: 'Galería' },
       { href: '/comercios', label: 'Comercios' },
     ],

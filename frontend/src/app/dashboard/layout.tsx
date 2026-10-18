@@ -29,6 +29,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Comunidad',
     items: [
+      { href: '/dashboard/servicios', label: 'Directorio', icon: '🗺️', adminOnly: true },
+      { href: '/dashboard/agenda', label: 'Agenda', icon: '📅', adminOnly: true },
       { href: '/dashboard/comercios', label: 'Comercios', icon: '🏬', adminOnly: true },
       { href: '/dashboard/galeria', label: 'Galería', icon: '📷', adminOnly: true },
       { href: '/dashboard/announcements', label: 'Comunicados', icon: '📰', adminOnly: true },

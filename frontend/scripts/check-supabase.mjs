@@ -92,6 +92,8 @@ const TABLES = [
   'reservations',
   'businesses',
   'site_settings',
+  'community_services',
+  'community_events',
 ];
 
 const BUCKETS = ['team-logos', 'player-photos', 'tournament-banners'];
@@ -182,6 +184,12 @@ const columnChecks = [
   ['businesses', 'name'],
   ['businesses', 'is_active'],
   ['site_settings', 'site_name'],
+  ['community_services', 'name'],
+  ['community_services', 'category'],
+  ['community_services', 'is_active'],
+  ['community_events', 'title'],
+  ['community_events', 'event_date'],
+  ['community_events', 'is_active'],
 ];
 let columnsOk = 0;
 for (const [table, column] of columnChecks) {

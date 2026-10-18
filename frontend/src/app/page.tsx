@@ -6,20 +6,17 @@ import { SmartImage } from '@/components/SmartImage';
 import { getBusinessesAction } from '@/app/actions/businesses';
 import { getSiteSettingsAction } from '@/app/actions/settings';
 import { getNoticesAction } from '@/app/actions/notices';
-import type { Notice } from '@/types';
+import { getCommunityEventsAction, getCommunityServicesAction } from '@/app/actions/services';
+import { ColumnVecinal } from '@/components/home/ColumnVecinal';
+import { ColumnDeportivo } from '@/components/home/ColumnDeportivo';
+import { ColumnAvisos, type HomeStats } from '@/components/home/ColumnAvisos';
+import type { HomeMatch, HomeStanding, HomeStory } from '@/components/home/types';
+import type { CommunityEvent, CommunityService, Notice } from '@/types';
 
 // =========================================================================
 // MOCK DATA FALLBACKS (Realistic content inspired by UV3's local life)
 // =========================================================================
-type HomeAnnouncement = {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  created_at: string;
-  image_url?: string | null;
-  is_featured?: boolean;
-};
+type HomeAnnouncement = HomeStory;
 
 const FALLBACK_ANNOUNCEMENTS: HomeAnnouncement[] = [
   {
@@ -99,21 +96,26 @@ const FALLBACK_MATCHES = [
 export default async function HomePage() {
   const user = await getCurrentUser();
 
-  const [settings, businessesResult, noticesResult] = await Promise.all([
+  const [settings, businessesResult, noticesResult, servicesResult, eventsResult] = await Promise.all([
     getSiteSettingsAction(),
     getBusinessesAction(),
     getNoticesAction(),
+    getCommunityServicesAction(),
+    getCommunityEventsAction({ limit: 8 }),
   ]);
   const businesses = businessesResult.success ? businessesResult.data ?? [] : [];
   const notices: Notice[] = noticesResult.success ? noticesResult.data ?? [] : [];
+  const services: CommunityService[] = servicesResult.success ? servicesResult.data ?? [] : [];
+  const events: CommunityEvent[] = eventsResult.success ? eventsResult.data ?? [] : [];
   const logoSrc = settings.logo_url || '/logo.jpg';
 
   // ─────────────────────────────────────────────────────────────────
   // DATA FETCHING (Supabase with graceful fallback)
   // ─────────────────────────────────────────────────────────────────
   let announcements: HomeAnnouncement[] = FALLBACK_ANNOUNCEMENTS;
-  let standings = FALLBACK_STANDINGS;
-  let matches = FALLBACK_MATCHES;
+  let standings: HomeStanding[] = FALLBACK_STANDINGS;
+  let matches: HomeMatch[] = FALLBACK_MATCHES;
+  let teamsCount = standings.length;
   let isDbConnected = false;
   let latestGalleryImage: string | null = null;
 
@@ -151,12 +153,12 @@ export default async function HomePage() {
         }));
       }
 
-      // Fetch matches
+      // Fetch matches (más recientes primero; se separan en próximos y resultados)
       const { data: dbMatches, error: mErr } = await supabase
         .from('matches')
         .select('*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name), venue:venues(name)')
-        .order('date_time', { ascending: true })
-        .limit(4);
+        .order('date_time', { ascending: false })
+        .limit(12);
 
       if (!mErr && dbMatches && dbMatches.length > 0) {
         matches = dbMatches.map(m => ({
@@ -171,6 +173,13 @@ export default async function HomePage() {
           away_score: m.away_score || 0
         }));
       }
+
+      // Conteo de equipos para el bloque de cifras.
+      const { count: dbTeamsCount } = await supabase
+        .from('teams')
+        .select('id', { count: 'exact', head: true });
+      if (typeof dbTeamsCount === 'number') teamsCount = dbTeamsCount;
+
       isDbConnected = true;
 
       // Última portada de galería para el bloque “Archivo Histórico”.
@@ -201,17 +210,37 @@ export default async function HomePage() {
     ? [...featuredAnnouncements, ...announcements.filter((a) => !a.is_featured)]
     : announcements;
   const featuredStory = orderedAnnouncements[0] || FALLBACK_ANNOUNCEMENTS[0];
-  const sideStories = orderedAnnouncements.slice(1, 4);
+  const sideStories = orderedAnnouncements.slice(1, 5);
 
   // Los comercios “favorito” van al carrusel de la portada; si no hay ninguno,
   // se muestran todos los publicados.
   const featuredBusinesses = businesses.filter((b) => b.is_featured);
   const carouselBusinesses = featuredBusinesses.length ? featuredBusinesses : businesses;
+  // Para la caja “Comercio de la Unidad” de la columna de avisos.
+  const boxBusinesses = [...featuredBusinesses, ...businesses.filter((b) => !b.is_featured)];
 
-  // Los avisos “favorito” se muestran en la portada; si no hay ninguno marcado,
-  // se muestran todos los publicados para que la columna nunca quede vacía.
+  // Los avisos “favorito” se muestran primero; se incluyen todos los publicados
+  // para que la columna de avisos nunca quede corta.
   const featuredNotices = notices.filter((n) => n.is_featured);
-  const portadaNotices = featuredNotices.length ? featuredNotices : notices;
+  const portadaNotices = [...featuredNotices, ...notices.filter((n) => !n.is_featured)];
+
+  // Partidos separados en próximos encuentros y últimos resultados.
+  const upcomingMatches = matches
+    .filter((m) => m.status === 'scheduled')
+    .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime())
+    .slice(0, 3);
+  const recentResults = matches
+    .filter((m) => m.status !== 'scheduled')
+    .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
+    .slice(0, 3);
+
+  const stats: HomeStats = {
+    teams: teamsCount,
+    businesses: businesses.length,
+    notices: notices.length,
+    services: services.length,
+    events: events.length,
+  };
 
   return (
     <main className="min-h-screen bg-uv3-bg text-[#1c1917] font-sans selection:bg-uv3-gold selection:text-uv3-green-dark">
@@ -311,6 +340,8 @@ export default async function HomePage() {
           <nav className="mt-4 flex flex-wrap items-center justify-center gap-y-2 gap-x-6 text-sm font-semibold uppercase tracking-wider text-[#44403c] border-b border-uv3-green-dark/10 pb-2 w-full">
             <Link href="/" className="text-uv3-green border-b-2 border-uv3-green pb-1">Portada</Link>
             <Link href="/announcements" className="hover:text-uv3-green transition-colors pb-1">Noticias Vecinales</Link>
+            <Link href="/agenda" className="hover:text-uv3-green transition-colors pb-1">Agenda</Link>
+            <Link href="/servicios" className="hover:text-uv3-green transition-colors pb-1">Directorio</Link>
             <Link href="/tournaments" className="hover:text-uv3-green transition-colors pb-1">Campeonatos</Link>
             <Link href="/teams" className="hover:text-uv3-green transition-colors pb-1">Equipos</Link>
             <Link href="/gallery" className="hover:text-uv3-green transition-colors pb-1">Galería de Fotos</Link>
@@ -376,275 +407,24 @@ export default async function HomePage() {
         </div>
 
         {/* THREE COLUMN EDITORIAL BODY */}
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_1.1fr_0.80fr]">
-          
-          {/* =========================================================================
-              COLUMNA 1: GESTIÓN VECINAL Y COMUNIDAD (DIARIO PORTADA)
-              ========================================================================= */}
-          <div className="space-y-6">
-            <div className="border-b-4 border-uv3-green pb-1.5">
-              <h3 className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-uv3-green-dark">
-                Sección Vecinal & Gestión
-              </h3>
-            </div>
-
-            {/* Featured Article */}
-            {featuredStory && (
-              <article className="space-y-4">
-                <span className="inline-block bg-uv3-green text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider rounded">
-                  {featuredStory.category.toUpperCase()}
-                </span>
-                <h4 className="font-heading text-2xl sm:text-3xl font-black leading-tight text-uv3-green-dark hover:text-uv3-green transition-colors">
-                  {featuredStory.title}
-                </h4>
-                <p className="text-[11px] text-[#78716c] uppercase tracking-wider font-semibold">
-                  Por: Junta Vecinal UV3 · {new Date(featuredStory.created_at).toLocaleDateString('es-PE')}
-                </p>
-                <div className="relative h-[240px] w-full border border-uv3-green-dark/10 overflow-hidden rounded bg-stone-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]">
-                  <SmartImage
-                    src={featuredStory.image_url || '/uv3-news-1.jpg'}
-                    alt={featuredStory.title}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 420px"
-                    className="object-cover transition-transform duration-700 hover:scale-105"
-                    priority
-                  />
-                  {!featuredStory.image_url && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-white text-xs">
-                      <p className="font-semibold italic">Archivo Histórico: Entorno de la Unidad Vecinal Nº3, Lima.</p>
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm leading-relaxed text-[#44403c] text-justify font-sans">
-                  {featuredStory.content}
-                </p>
-                <div className="pt-2 border-b border-stone-200"></div>
-              </article>
-            )}
-
-            {/* Side Stories (Grid of smaller cards) */}
-            <div className="space-y-4">
-              {sideStories.map((story) => (
-                <div key={story.id} className="flex gap-3 border-b border-stone-200/80 pb-4 last:border-0 last:pb-0">
-                  {story.image_url && (
-                    <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded bg-stone-100">
-                      <SmartImage src={story.image_url} alt={story.title} fill sizes="96px" className="object-cover" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-uv3-gold">
-                      {story.category.toUpperCase()}
-                    </span>
-                    <h5 className="font-heading text-base font-bold text-uv3-green-dark hover:text-uv3-green mt-1">
-                      <Link href={`/announcements#${story.id}`}>{story.title}</Link>
-                    </h5>
-                    <p className="text-xs text-[#57534e] mt-1 leading-relaxed line-clamp-2">
-                      {story.content}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-uv3-bg border border-uv3-green/20 p-4 rounded-lg">
-              <h5 className="font-heading text-sm font-bold text-uv3-green-dark">¿Tienes alguna denuncia o sugerencia vecinal?</h5>
-              <p className="text-xs text-[#57534e] mt-1">
-                La Junta General de Propietarios recibe reclamos sobre mantenimiento, seguridad y deportes en su local oficial frente al parque central.
-              </p>
-            </div>
-          </div>
+        <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr_1fr]">
+          <ColumnVecinal featuredStory={featuredStory} sideStories={sideStories} services={services} />
 
           {/* =========================================================================
               COLUMNA 2: EL DEPORTIVO UV3 (SECCIÓN LIGA DEPORTIVA)
               ========================================================================= */}
-          <div className="space-y-6 lg:border-l lg:border-r lg:border-stone-200 lg:px-6">
-            <div className="border-b-4 border-uv3-gold pb-1.5 flex justify-between items-end">
-              <h3 className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-uv3-green-dark">
-                El Deportivo UV3
-              </h3>
-              <span className="text-[10px] font-bold uppercase bg-uv3-gold/20 text-uv3-green-dark px-1.5 py-0.5 rounded">
-                Torneo Activo
-              </span>
-            </div>
-
-            {/* Banner deportivo */}
-            <div className="bg-gradient-to-br from-uv3-green-dark to-uv3-green text-white p-5 rounded-lg shadow-md relative overflow-hidden">
-              <div className="absolute -right-10 -bottom-10 h-32 w-32 bg-uv3-gold/20 rounded-full blur-2xl"></div>
-              <h4 className="font-heading text-xl font-bold uppercase tracking-wide">
-                Campeonato Apertura 2026
-              </h4>
-              <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                Organizado por la comisión de deportes de la Junta Vecinal de la UV3. Fomentando el compañerismo y el talento barrial.
-              </p>
-              <div className="mt-4 flex gap-2">
-                <Link
-                  href="/tournaments"
-                  className="bg-uv3-gold hover:bg-white text-uv3-green-dark px-3 py-1.5 rounded text-xs font-bold transition-all shadow-sm"
-                >
-                  Ver Fixture y Reglas
-                </Link>
-              </div>
-            </div>
-
-            {/* Standings Widget (Tabla de Posiciones) */}
-            <div className="space-y-3">
-              <h4 className="font-heading text-sm font-bold text-uv3-green-dark uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1">
-                🏆 Tabla de Posiciones (Liga Vecinal)
-              </h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs font-sans">
-                  <thead>
-                    <tr className="border-b border-stone-300 text-stone-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-1">Pos</th>
-                      <th className="py-1">Equipo</th>
-                      <th className="py-1 text-center">PJ</th>
-                      <th className="py-1 text-center">DG</th>
-                      <th className="py-1 text-center font-bold text-uv3-green-dark">Pts</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {standings.map((item, idx) => (
-                      <tr key={idx} className="border-b border-stone-100 hover:bg-stone-50 transition-colors">
-                        <td className="py-2.5 font-bold text-stone-500">{idx + 1}</td>
-                        <td className="py-2.5 font-semibold text-uv3-green-dark">{item.team.name}</td>
-                        <td className="py-2.5 text-center text-stone-600">{item.played}</td>
-                        <td className="py-2.5 text-center text-stone-600">{item.goal_difference > 0 ? `+${item.goal_difference}` : item.goal_difference}</td>
-                        <td className="py-2.5 text-center font-bold text-uv3-green-dark">{item.points}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-[10px] text-stone-500 italic">
-                * Clasifican los 4 primeros a la liguilla final por el trofeo de la Junta General.
-              </p>
-            </div>
-
-            {/* Partidos Destacados / Próximos Encuentros */}
-            <div className="space-y-3">
-              <h4 className="font-heading text-sm font-bold text-uv3-green-dark uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1">
-                ⚽ Centro de Partidos
-              </h4>
-              <div className="space-y-3">
-                {matches.map((match, idx) => {
-                  const isCompleted = match.status === 'completed';
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`p-3 rounded border text-xs transition-all ${
-                        isCompleted 
-                          ? 'bg-stone-50/50 border-stone-200' 
-                          : 'bg-white border-uv3-green-dark/15 shadow-[0_2px_8px_rgba(20,131,59,0.05)]'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center text-[10px] text-stone-500 uppercase font-semibold">
-                        <span>Jornada {match.round}</span>
-                        <span className={`px-2 py-0.5 rounded font-bold ${
-                          isCompleted ? 'bg-stone-200 text-stone-700' : 'bg-uv3-gold/20 text-uv3-green-dark'
-                        }`}>
-                          {isCompleted ? 'Finalizado' : 'Próximo'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between my-2">
-                        <span className="font-bold text-uv3-green-dark truncate max-w-[120px]">{match.home_team.name}</span>
-                        <div className="flex items-center gap-2 px-2 py-1 rounded bg-stone-100 font-mono font-bold text-sm">
-                          {isCompleted ? (
-                            <span>{match.home_score} - {match.away_score}</span>
-                          ) : (
-                            <span className="text-stone-400 text-xs">vs</span>
-                          )}
-                        </div>
-                        <span className="font-bold text-uv3-green-dark truncate max-w-[120px] text-right">{match.away_team.name}</span>
-                      </div>
-
-                      <div className="text-[10px] text-stone-500 flex justify-between items-center border-t border-stone-100 pt-1.5 mt-1.5">
-                        <span>📍 {match.venue.name}</span>
-                        <span>
-                          {new Date(match.date_time).toLocaleDateString('es-PE', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-          </div>
+          <ColumnDeportivo standings={standings} upcomingMatches={upcomingMatches} recentResults={recentResults} />
 
           {/* =========================================================================
-              COLUMNA 3: AVISOS Y ARCHIVO HISTÓRICO (BOLETÍN VECINAL)
+              COLUMNA 3: AVISOS, DIRECTORIO Y AGENDA (BOLETÍN VECINAL)
               ========================================================================= */}
-          <div className="space-y-6">
-            <div className="border-b-4 border-stone-400 pb-1.5">
-              <h3 className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-[#44403c]">
-                Avisos y Utilidad
-              </h3>
-            </div>
-
-            {/* Avisos editables desde el panel (⭐ = se muestra en la portada) */}
-            {portadaNotices.length > 0 ? (
-              portadaNotices.map((notice) => (
-                <div key={notice.id} className="border border-stone-200 bg-white p-5 rounded-lg shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-uv3-green">
-                    {notice.is_featured ? '★ Aviso destacado' : 'Aviso de utilidad'}
-                  </p>
-                  <h4 className="font-heading text-base font-bold text-uv3-green-dark mt-1">
-                    {notice.icon ? `${notice.icon} ` : ''}
-                    {notice.title}
-                  </h4>
-                  {notice.content && (
-                    <p className="mt-3 text-xs leading-relaxed text-stone-600 whitespace-pre-line">{notice.content}</p>
-                  )}
-                  {notice.link_url && (
-                    <a
-                      href={notice.link_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-block text-xs font-bold text-uv3-green hover:underline"
-                    >
-                      {notice.link_label || 'Ver más'} →
-                    </a>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-stone-500">
-                Aún no hay avisos publicados. Agrégalos desde el panel en “Avisos y utilidad”.
-              </p>
-            )}
-
-            {/* Archivo Histórico / Galería Preview */}
-            <div className="border border-stone-200 bg-white p-4 rounded-lg shadow-sm space-y-3">
-              <div className="flex justify-between items-center border-b border-stone-100 pb-1.5">
-                <h4 className="font-heading text-xs font-bold uppercase tracking-wider text-uv3-green-dark">
-                  📷 Archivo Histórico UV3
-                </h4>
-                <Link href="/gallery" className="text-[10px] font-bold text-uv3-green hover:underline">
-                  Abrir Galería
-                </Link>
-              </div>
-
-              <div className="relative h-40 w-full overflow-hidden rounded bg-stone-100">
-                <SmartImage
-                  src={latestGalleryImage || '/uv3-news-2.jpg'}
-                  alt="Patrimonio Unidad Vecinal 3"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 320px"
-                  className="object-cover transition-transform duration-500 hover:scale-105"
-                />
-              </div>
-              <p className="text-[11px] leading-relaxed text-stone-500 italic">
-                Inaugurada a mediados del siglo XX como el primer gran complejo habitacional moderno de Lima, la UV3 destaca por sus grandes espacios libres.
-              </p>
-            </div>
-
-          </div>
+          <ColumnAvisos
+            notices={portadaNotices}
+            businesses={boxBusinesses}
+            events={events}
+            latestGalleryImage={latestGalleryImage}
+            stats={stats}
+          />
 
         </div>
       </section>
@@ -714,6 +494,8 @@ export default async function HomePage() {
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/85">
             <Link href="/announcements" className="hover:text-uv3-gold transition-colors">Comunicados</Link>
+            <Link href="/agenda" className="hover:text-uv3-gold transition-colors">Agenda</Link>
+            <Link href="/servicios" className="hover:text-uv3-gold transition-colors">Directorio</Link>
             <Link href="/tournaments" className="hover:text-uv3-gold transition-colors">Deportes</Link>
             <Link href="/teams" className="hover:text-uv3-gold transition-colors">Equipos</Link>
             <Link href="/gallery" className="hover:text-uv3-gold transition-colors">Galería</Link>
