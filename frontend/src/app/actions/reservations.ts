@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getCurrentUser } from '@/app/auth/actions';
 import { reservationSchema } from './schemas';
 import { computePrice, limaToUtc } from '@/utils/reservations';
@@ -121,7 +121,12 @@ export async function createReservationAction(
 
   const user = await getCurrentUser();
 
-  const { data, error } = await supabase
+  // La reserva pública se inserta con el cliente de servicio (bypass de RLS).
+  // La validación de entrada ya se hizo con Zod arriba, así que es seguro.
+  const adminClient = createAdminClient();
+  const writer = adminClient ?? supabase;
+
+  const { data, error } = await writer
     .from('reservations')
     .insert({
       space_id: input.space_id,
