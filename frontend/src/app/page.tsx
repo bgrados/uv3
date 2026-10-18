@@ -153,10 +153,12 @@ export default async function HomePage() {
         }));
       }
 
-      // Fetch matches (más recientes primero; se separan en próximos y resultados)
+      // Fetch matches (más recientes primero; se separan en próximos y resultados).
+      // Se excluyen los partidos sin fecha para no mostrar "Invalid Date".
       const { data: dbMatches, error: mErr } = await supabase
         .from('matches')
         .select('*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name), venue:venues(name)')
+        .not('date_time', 'is', null)
         .order('date_time', { ascending: false })
         .limit(12);
 
@@ -225,11 +227,13 @@ export default async function HomePage() {
   const portadaNotices = [...featuredNotices, ...notices.filter((n) => !n.is_featured)];
 
   // Partidos separados en próximos encuentros y últimos resultados.
-  const upcomingMatches = matches
+  // Sólo se consideran los que tienen fecha válida.
+  const datedMatches = matches.filter((m) => m.date_time && !Number.isNaN(new Date(m.date_time).getTime()));
+  const upcomingMatches = datedMatches
     .filter((m) => m.status === 'scheduled')
     .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime())
     .slice(0, 3);
-  const recentResults = matches
+  const recentResults = datedMatches
     .filter((m) => m.status !== 'scheduled')
     .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
     .slice(0, 3);
