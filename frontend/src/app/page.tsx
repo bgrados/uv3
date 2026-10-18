@@ -18,6 +18,19 @@ import type { CommunityEvent, CommunityService, Notice } from '@/types';
 // =========================================================================
 type HomeAnnouncement = HomeStory;
 
+/** Fila cruda de `matches` tal como la devuelve Supabase (con los joins). */
+type RawMatch = {
+  id: string;
+  round: number | null;
+  date_time: string | null;
+  status: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  home_team: { name: string | null } | null;
+  away_team: { name: string | null } | null;
+  venue: { name: string | null } | null;
+};
+
 const FALLBACK_ANNOUNCEMENTS: HomeAnnouncement[] = [
   {
     id: '1',
@@ -114,7 +127,8 @@ export default async function HomePage() {
   // ─────────────────────────────────────────────────────────────────
   let announcements: HomeAnnouncement[] = FALLBACK_ANNOUNCEMENTS;
   let standings: HomeStanding[] = FALLBACK_STANDINGS;
-  let matches: HomeMatch[] = FALLBACK_MATCHES;
+  let dbUpcoming: HomeMatch[] = [];
+  let dbResults: HomeMatch[] = [];
   let teamsCount = standings.length;
   let isDbConnected = false;
   let latestGalleryImage: string | null = null;
@@ -153,27 +167,45 @@ export default async function HomePage() {
         }));
       }
 
-      // Fetch matches (más recientes primero; se separan en próximos y resultados).
-      // Se excluyen los partidos sin fecha para no mostrar "Invalid Date".
-      const { data: dbMatches, error: mErr } = await supabase
+      // Partidos: dos consultas precisas (evita perder resultados por el límite
+      // y descarta los partidos sin fecha, que mostrarían "Invalid Date").
+      const matchSelect = '*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name), venue:venues(name)';
+
+      // Próximos encuentros: programados y con fecha futura.
+      const { data: dbUpcomingRows } = await supabase
         .from('matches')
-        .select('*, home_team:teams!home_team_id(name), away_team:teams!away_team_id(name), venue:venues(name)')
+        .select(matchSelect)
+        .eq('status', 'scheduled')
+        .gte('date_time', new Date().toISOString())
+        .order('date_time', { ascending: true })
+        .limit(3);
+
+      // Últimos resultados: finalizados, más recientes primero.
+      const { data: dbResultRows } = await supabase
+        .from('matches')
+        .select(matchSelect)
+        .neq('status', 'scheduled')
         .not('date_time', 'is', null)
         .order('date_time', { ascending: false })
-        .limit(12);
+        .limit(3);
 
-      if (!mErr && dbMatches && dbMatches.length > 0) {
-        matches = dbMatches.map(m => ({
-          id: m.id,
-          round: m.round || 1,
-          home_team: { name: m.home_team?.name || 'Local' },
-          away_team: { name: m.away_team?.name || 'Visita' },
-          date_time: m.date_time,
-          venue: { name: m.venue?.name || 'Cancha Principal' },
-          status: m.status || 'scheduled',
-          home_score: m.home_score || 0,
-          away_score: m.away_score || 0
-        }));
+      const mapMatch = (m: RawMatch): HomeMatch => ({
+        id: m.id,
+        round: m.round ?? 1,
+        home_team: { name: m.home_team?.name || 'Local' },
+        away_team: { name: m.away_team?.name || 'Visita' },
+        date_time: m.date_time ?? '',
+        venue: { name: m.venue?.name || 'Cancha Principal' },
+        status: m.status || 'scheduled',
+        home_score: m.home_score ?? 0,
+        away_score: m.away_score ?? 0,
+      });
+
+      if (dbUpcomingRows && dbUpcomingRows.length > 0) {
+        dbUpcoming = (dbUpcomingRows as unknown as RawMatch[]).map(mapMatch);
+      }
+      if (dbResultRows && dbResultRows.length > 0) {
+        dbResults = (dbResultRows as unknown as RawMatch[]).map(mapMatch);
       }
 
       // Conteo de equipos para el bloque de cifras.
@@ -226,18 +258,13 @@ export default async function HomePage() {
   const featuredNotices = notices.filter((n) => n.is_featured);
   const portadaNotices = [...featuredNotices, ...notices.filter((n) => !n.is_featured)];
 
-  // Partidos separados en próximos encuentros y últimos resultados.
-  // Sólo se consideran los que tienen fecha válida.
-  const datedMatches = matches.filter((m) => m.date_time && !Number.isNaN(new Date(m.date_time).getTime()));
-  const upcomingMatches = datedMatches
-    .filter((m) => m.status === 'scheduled')
-    .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime())
-    .slice(0, 3);
-  const recentResults = datedMatches
-    .filter((m) => m.status !== 'scheduled')
-    .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())
-    .slice(0, 3);
-
+  // Partidos: si la base no devolvió filas, se usa el contenido de ejemplo.
+  const upcomingMatches = dbUpcoming.length
+    ? dbUpcoming
+    : FALLBACK_MATCHES.filter((m) => m.status === 'scheduled').slice(0, 3);
+  const recentResults = dbResults.length
+    ? dbResults
+    : FALLBACK_MATCHES.filter((m) => m.status !== 'scheduled').slice(0, 3);
   const stats: HomeStats = {
     teams: teamsCount,
     businesses: businesses.length,
