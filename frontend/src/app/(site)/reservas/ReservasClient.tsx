@@ -118,6 +118,45 @@ export function ReservasClient({ spaces, settings }: Props) {
     [occupancy, range]
   );
 
+  // Marca cada hora de inicio como libre u ocupada según la duración elegida.
+  const startSlots = useMemo(
+    () =>
+      START_TIMES.map((t) => {
+        const s = startUtc(date, t);
+        const e = new Date(s.getTime() + duration * 60000);
+        const busy = occupancy.some(
+          (o) => s.getTime() < new Date(o.end_at).getTime() && e.getTime() > new Date(o.start_at).getTime()
+        );
+        return { time: t, disabled: busy };
+      }),
+    [date, duration, occupancy]
+  );
+
+  const freeSlots = useMemo(() => startSlots.filter((s) => !s.disabled), [startSlots]);
+
+  // Si la hora elegida queda ocupada (p. ej. al cambiar la duración), salta al horario libre más cercano.
+  useEffect(() => {
+    if (freeSlots.length === 0) return;
+    if (freeSlots.some((s) => s.time === startTime)) return;
+    const cur = Math.max(0, START_TIMES.indexOf(startTime));
+    let best = freeSlots[freeSlots.length - 1];
+    let bestDist = Infinity;
+    for (let i = freeSlots.length - 1; i >= 0; i -= 1) {
+      const dist = Math.abs(START_TIMES.indexOf(freeSlots[i].time) - cur);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = freeSlots[i];
+      }
+    }
+    setStartTime(best.time);
+  }, [freeSlots, startTime]);
+
+  // Siguiente horario libre después del actual (o el primero del día si ya no hay más).
+  const nextFree = useMemo(() => {
+    const after = freeSlots.find((s) => START_TIMES.indexOf(s.time) > START_TIMES.indexOf(startTime));
+    return after ?? freeSlots[0];
+  }, [freeSlots, startTime]);
+
   const bands = useMemo(() => {
     const dayStart = new Date(`${date}T00:00:00-05:00`).getTime();
     const dayMs = 24 * 3600 * 1000;
@@ -128,9 +167,16 @@ export function ReservasClient({ spaces, settings }: Props) {
         const from = Math.max(0, s - dayStart);
         const to = Math.min(dayMs, e - dayStart);
         if (to <= from) return null;
-        return { left: (from / dayMs) * 100, width: ((to - from) / dayMs) * 100, label: toLimaLabel(s) };
+        const blocked = o.kind !== 'reserva';
+        return {
+          left: (from / dayMs) * 100,
+          width: ((to - from) / dayMs) * 100,
+          label: toLimaLabel(s),
+          blocked,
+          reason: o.kind,
+        };
       })
-      .filter(Boolean) as { left: number; width: number; label: string }[];
+      .filter(Boolean) as { left: number; width: number; label: string; blocked: boolean; reason: string }[];
   }, [occupancy, date]);
 
   const selectedBand = useMemo(() => {
@@ -311,7 +357,12 @@ export function ReservasClient({ spaces, settings }: Props) {
 
             <div className="relative mt-4 h-8 w-full overflow-hidden rounded bg-stone-100">
               {bands.map((b, i) => (
-                <div key={i} className="absolute top-0 h-full bg-red-400/70" style={{ left: `${b.left}%`, width: `${b.width}%` }} title={`Ocupado desde ${b.label}`} />
+                <div
+                  key={i}
+                  className={`absolute top-0 h-full ${b.blocked ? 'bg-amber-400/70' : 'bg-red-400/70'}`}
+                  style={{ left: `${b.left}%`, width: `${b.width}%` }}
+                  title={b.blocked ? `Bloqueado (${b.reason}) desde ${b.label}` : `Reservado desde ${b.label}`}
+                />
               ))}
               <div className="absolute top-0 h-full bg-uv3-green/25 ring-1 ring-uv3-green" style={{ left: `${selectedBand.left}%`, width: `${selectedBand.width}%` }} />
               {[0, 6, 12, 18, 24].map((h) => (
@@ -321,7 +372,8 @@ export function ReservasClient({ spaces, settings }: Props) {
               ))}
             </div>
             <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-stone-500">
-              <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-red-400/70" /> Ocupado</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-red-400/70" /> Reservado</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-amber-400/70" /> Bloqueado por la junta</span>
               <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-uv3-green/25 ring-1 ring-uv3-green" /> Tu reserva</span>
             </div>
           </div>
@@ -333,10 +385,17 @@ export function ReservasClient({ spaces, settings }: Props) {
             <label className="text-xs font-semibold text-stone-600">
               Hora de inicio
               <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal">
-                {START_TIMES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {startSlots.map((s) => (
+                  <option key={s.time} value={s.time} disabled={s.disabled}>
+                    {s.time}{s.disabled ? ' — ocupado' : ''}
+                  </option>
                 ))}
               </select>
+              <span className={`mt-1 block text-[11px] font-normal ${freeSlots.length === 0 ? 'text-red-500' : 'text-stone-400'}`}>
+                {freeSlots.length > 0
+                  ? `${freeSlots.length} horario${freeSlots.length === 1 ? '' : 's'} libre${freeSlots.length === 1 ? '' : 's'} para ${DURATIONS.find((d) => d.value === duration)?.label}`
+                  : 'Sin horarios libres para esta duración. Prueba otra duración u otra fecha.'}
+              </span>
             </label>
             <label className="text-xs font-semibold text-stone-600">
               Duración
@@ -347,6 +406,15 @@ export function ReservasClient({ spaces, settings }: Props) {
               </select>
             </label>
           </div>
+          {freeSlots.length > 0 && nextFree && nextFree.time !== startTime && (
+            <button
+              type="button"
+              onClick={() => setStartTime(nextFree.time)}
+              className="mt-3 rounded-lg border border-uv3-green/40 bg-uv3-green/5 px-3 py-2 text-xs font-semibold text-uv3-green-dark hover:bg-uv3-green/10"
+            >
+              ⏱️ Ir al siguiente horario libre ({nextFree.time})
+            </button>
+          )}
           <label className="mt-4 block text-xs font-semibold text-stone-600">
             Tipo de uso
             <div className="mt-1 flex gap-2">
@@ -445,11 +513,11 @@ export function ReservasClient({ spaces, settings }: Props) {
 
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || hasOverlap || freeSlots.length === 0}
           onClick={handleSubmit}
-          className="w-full rounded-lg bg-uv3-green px-4 py-3 font-heading text-sm font-bold uppercase tracking-wide text-white transition hover:bg-uv3-green-dark disabled:opacity-60"
+          className="w-full rounded-lg bg-uv3-green px-4 py-3 font-heading text-sm font-bold uppercase tracking-wide text-white transition hover:bg-uv3-green-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? 'Registrando…' : 'Confirmar reserva'}
+          {busy ? 'Registrando…' : hasOverlap ? 'Horario ocupado' : 'Confirmar reserva'}
         </button>
         <p className="text-center text-[11px] text-stone-400">
           Al confirmar aceptas las normas de uso del espacio y la verificación del pago por la junta.

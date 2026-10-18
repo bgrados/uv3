@@ -3,10 +3,18 @@ import { createClient } from '@/utils/supabase/server';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton';
 import { SubmitButton } from '@/components/SubmitButton';
-import { createSpaceAction, deleteSpaceAction, updateSpaceAction } from '@/app/actions/spaces';
+import { createSpaceAction, deleteSpaceAction, updateSpaceAction, getSpaceBlocksAction, createSpaceBlockAction, deleteSpaceBlockAction } from '@/app/actions/spaces';
 import type { Space } from '@/types';
 
 export const dynamic = 'force-dynamic';
+
+function limaRange(iso: string) {
+  return new Date(iso).toLocaleString('es-PE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Lima',
+  });
+}
 
 const SPORTS: { value: string; label: string }[] = [
   { value: 'futbol', label: 'Fútbol' },
@@ -103,6 +111,9 @@ export default async function CanchasPage({
     return { ...r, sports: (r.space_sports ?? []).map((s) => s.sport) } as unknown as Space;
   });
 
+  const blocksRes = await getSpaceBlocksAction();
+  const blocks = blocksRes.success ? blocksRes.data ?? [] : [];
+
   async function createForm(formData: FormData) {
     'use server';
     const res = await createSpaceAction(formData);
@@ -119,6 +130,17 @@ export default async function CanchasPage({
     const id = String(formData.get('id'));
     const res = await deleteSpaceAction(id);
     redirect(`/dashboard/canchas?${res.success ? 'ok=Cancha eliminada' : `error=${encodeURIComponent(res.error ?? 'Error')}`}`);
+  }
+  async function createBlockForm(formData: FormData) {
+    'use server';
+    const res = await createSpaceBlockAction(formData);
+    redirect(`/dashboard/canchas?${res.success ? 'ok=Bloqueo creado' : `error=${encodeURIComponent(res.error ?? 'Error')}`}`);
+  }
+  async function deleteBlockForm(formData: FormData) {
+    'use server';
+    const id = String(formData.get('id'));
+    const res = await deleteSpaceBlockAction(id);
+    redirect(`/dashboard/canchas?${res.success ? 'ok=Bloqueo eliminado' : `error=${encodeURIComponent(res.error ?? 'Error')}`}`);
   }
 
   return (
@@ -145,6 +167,65 @@ export default async function CanchasPage({
             <SubmitButton label="Crear espacio" pendingLabel="Creando…" />
           </div>
         </form>
+      </section>
+
+      <section className="mt-8 rounded-xl border bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-uv3-green-dark">Bloqueos de horario</h2>
+        <p className="mt-1 text-sm text-stone-600">
+          Bloquea una cancha para mantenimiento, feriados o uso interno de la junta. Los horarios bloqueados aparecen
+          en rojo/ámbar en la página pública de reservas y no se pueden reservar.
+        </p>
+        <form action={createBlockForm} className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-gray-700">Espacio</span>
+            <select name="space_id" required className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green">
+              {spaces.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-gray-700">Fecha</span>
+            <input name="date" type="date" required className="rounded-lg border px-3 py-2" />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-gray-700">Hora de inicio</span>
+            <input name="start_time" type="time" required defaultValue="08:00" className="rounded-lg border px-3 py-2" />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-gray-700">Hora de fin</span>
+            <input name="end_time" type="time" required defaultValue="22:00" className="rounded-lg border px-3 py-2" />
+          </label>
+          <label className="grid gap-2 sm:col-span-2">
+            <span className="text-sm font-medium text-gray-700">Motivo (opcional)</span>
+            <input name="reason" placeholder="Mantenimiento, feriado, uso interno…" className="rounded-lg border px-3 py-2" />
+          </label>
+          <div className="sm:col-span-2">
+            <SubmitButton label="Crear bloqueo" pendingLabel="Creando…" />
+          </div>
+        </form>
+
+        <div className="mt-6 border-t pt-4">
+          <h3 className="text-sm font-semibold text-stone-700">Bloqueos vigentes y futuros ({blocks.length})</h3>
+          <ul className="mt-3 space-y-2">
+            {blocks.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+                <div>
+                  <p className="font-semibold text-amber-900">{b.space_name}</p>
+                  <p className="text-xs text-amber-800">
+                    {limaRange(b.start_at)} → {limaRange(b.end_at)}
+                    {b.reason ? ` · ${b.reason}` : ''}
+                  </p>
+                </div>
+                <form action={deleteBlockForm}>
+                  <input type="hidden" name="id" value={b.id} />
+                  <ConfirmSubmitButton label="Quitar" pendingLabel="Quitando..." confirmMessage="¿Quitar este bloqueo?" />
+                </form>
+              </li>
+            ))}
+            {blocks.length === 0 && <li className="text-sm text-stone-500">No hay bloqueos registrados.</li>}
+          </ul>
+        </div>
       </section>
 
       <section className="mt-8 space-y-4">

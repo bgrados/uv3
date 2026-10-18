@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import { createRefereeAction } from '@/app/actions/users';
+import { createRefereeAction, updateRefereeAction, deleteRefereeAction } from '@/app/actions/users';
+import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton';
+import { SubmitButton } from '@/components/SubmitButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,22 @@ export default async function ArbitrosPage({
       redirect(`/dashboard/arbitros?error=${encodeURIComponent(result.error ?? 'No se pudo crear el árbitro.')}`);
     }
     redirect('/dashboard/arbitros?ok=Árbitro creado correctamente.');
+  }
+  async function updateForm(formData: FormData) {
+    'use server';
+    const result = await updateRefereeAction(formData);
+    if (!result.success) {
+      redirect(`/dashboard/arbitros?error=${encodeURIComponent(result.error ?? 'No se pudo actualizar el árbitro.')}`);
+    }
+    redirect('/dashboard/arbitros?ok=Árbitro actualizado.');
+  }
+  async function deleteForm(formData: FormData) {
+    'use server';
+    const result = await deleteRefereeAction(String(formData.get('id') ?? ''));
+    if (!result.success) {
+      redirect(`/dashboard/arbitros?error=${encodeURIComponent(result.error ?? 'No se pudo eliminar el árbitro.')}`);
+    }
+    redirect('/dashboard/arbitros?ok=Árbitro eliminado.');
   }
 
   return (
@@ -114,14 +132,47 @@ export default async function ArbitrosPage({
         ) : (
           <ul className="space-y-3">
             {(referees ?? []).map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-white p-4 shadow-sm">
-                <div>
-                  <p className="font-semibold text-stone-800">{r.full_name || r.username || r.email}</p>
-                  <p className="text-xs text-gray-500">{r.email}</p>
-                </div>
-                <div className="text-sm text-stone-600">
-                  Partidos asignados: <span className="font-bold text-uv3-green-dark">{matchesByReferee.get(r.id) ?? 0}</span>
-                </div>
+              <li key={r.id} className="rounded-xl border bg-white p-4 shadow-sm">
+                <details>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-stone-800">{r.full_name || r.username || r.email}</p>
+                      <p className="text-xs text-gray-500">{r.email}</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-stone-600">
+                        Partidos asignados: <span className="font-bold text-uv3-green-dark">{matchesByReferee.get(r.id) ?? 0}</span>
+                      </span>
+                      <span className="text-xs font-semibold text-uv3-green">Editar ▾</span>
+                    </div>
+                  </summary>
+                  <form action={updateForm} className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+                    <input type="hidden" name="id" value={r.id} />
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-gray-700">Nombre completo</span>
+                      <input name="full_name" required defaultValue={r.full_name ?? ''} className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green" />
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-gray-700">Correo electrónico</span>
+                      <input name="email" type="email" defaultValue={r.email ?? ''} className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green" />
+                    </label>
+                    <label className="grid gap-2 sm:col-span-2">
+                      <span className="text-sm font-medium text-gray-700">Nueva contraseña (opcional)</span>
+                      <input name="password" type="password" minLength={6} placeholder="Dejar en blanco para no cambiar" className="rounded-lg border px-3 py-2 outline-none focus:border-uv3-green" />
+                    </label>
+                    <div className="sm:col-span-2">
+                      <SubmitButton label="Guardar cambios" pendingLabel="Guardando…" />
+                    </div>
+                  </form>
+                  <form action={deleteForm} className="mt-4 border-t pt-4">
+                    <input type="hidden" name="id" value={r.id} />
+                    <ConfirmSubmitButton
+                      label="Eliminar árbitro"
+                      pendingLabel="Eliminando..."
+                      confirmMessage={`¿Eliminar la cuenta de "${r.full_name || r.email}"? Se quitará de sus partidos.`}
+                    />
+                  </form>
+                </details>
               </li>
             ))}
           </ul>

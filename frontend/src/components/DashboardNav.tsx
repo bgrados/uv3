@@ -7,6 +7,7 @@ export interface DashboardNavItem {
   href: string;
   label: string;
   icon: string;
+  badge?: number;
 }
 
 export interface DashboardNavGroup {
@@ -45,7 +46,12 @@ export function DashboardNav({ groups }: { groups: DashboardNavGroup[] }) {
                   <span aria-hidden className="text-base leading-none">
                     {item.icon}
                   </span>
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge ? (
+                    <span className="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -76,6 +82,11 @@ export function DashboardNavMobile({ groups }: { groups: DashboardNavGroup[] }) 
           >
             <span aria-hidden>{item.icon}</span>
             {item.label}
+            {item.badge ? (
+              <span className="ml-0.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                {item.badge}
+              </span>
+            ) : null}
           </Link>
         );
       })}

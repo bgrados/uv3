@@ -119,6 +119,16 @@ export interface ReservationInterval {
   kind: string;
 }
 
+export interface SpaceBlock {
+  id: string;
+  space_id: string;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Comercios -------------------------------------------------------------
 
 export type BusinessCategory = 'tienda' | 'farmacia' | 'mercado' | 'restaurante' | 'servicio' | 'otro';

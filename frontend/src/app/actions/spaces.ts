@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { getCurrentUser } from '@/app/auth/actions';
 import { spaceSchema } from './schemas';
-import type { ActionResponse, Space } from '@/types';
+import { limaToUtc } from '@/utils/reservations';
+import type { ActionResponse, Space, SpaceBlock } from '@/types';
 
 const NO_SUPABASE = {
   success: false,
@@ -143,6 +144,91 @@ export async function deleteSpaceAction(id: string): Promise<ActionResponse> {
   if (user.role !== 'admin') return { success: false, error: 'Sólo el administrador puede gestionar canchas.' };
 
   const { error } = await supabase.from('spaces').delete().eq('id', id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/dashboard/canchas');
+  revalidatePath('/reservas');
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Bloqueos de espacios (mantenimiento, feriados, uso interno de la junta)
+// ---------------------------------------------------------------------------
+
+/** Lista los bloqueos vigentes y futuros, con el nombre del espacio. */
+export async function getSpaceBlocksAction(): Promise<
+  ActionResponse<(SpaceBlock & { space_name: string })[]>
+> {
+  const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
+  const { data, error } = await supabase
+    .from('space_blocks')
+    .select('*, spaces(name)')
+    .gte('end_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+    .order('start_at');
+
+  if (error) return { success: false, error: error.message };
+
+  const rows = (data ?? []).map((row) => {
+    const r = row as Record<string, unknown> & { spaces?: { name: string } | null };
+    const { spaces, ...rest } = r;
+    return { ...(rest as unknown as SpaceBlock), space_name: spaces?.name ?? '—' };
+  });
+
+  return { success: true, data: rows };
+}
+
+export async function createSpaceBlockAction(formData: FormData): Promise<ActionResponse<SpaceBlock>> {
+  const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (user.role !== 'admin') return { success: false, error: 'Sólo el administrador puede gestionar bloqueos.' };
+
+  const spaceId = String(formData.get('space_id') ?? '');
+  const date = String(formData.get('date') ?? '');
+  const startTime = String(formData.get('start_time') ?? '');
+  const endTime = String(formData.get('end_time') ?? '');
+  const reason = (formData.get('reason') as string)?.trim() || null;
+
+  if (!spaceId) return { success: false, error: 'Selecciona un espacio.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { success: false, error: 'Selecciona una fecha válida.' };
+  if (!/^\d{2}:\d{2}/.test(startTime) || !/^\d{2}:\d{2}/.test(endTime)) {
+    return { success: false, error: 'Indica hora de inicio y fin.' };
+  }
+
+  const start = limaToUtc(date, startTime);
+  let end = limaToUtc(date, endTime);
+  // Si la hora de fin es anterior o igual al inicio, se interpreta como el día siguiente.
+  if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 3600 * 1000);
+
+  const { data, error } = await supabase
+    .from('space_blocks')
+    .insert({ space_id: spaceId, start_at: start.toISOString(), end_at: end.toISOString(), reason })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23P01') return { success: false, error: 'Ya existe un bloqueo que se cruza con ese horario.' };
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/dashboard/canchas');
+  revalidatePath('/reservas');
+  return { success: true, data: data as SpaceBlock };
+}
+
+export async function deleteSpaceBlockAction(id: string): Promise<ActionResponse> {
+  const supabase = await createClient();
+  if (!supabase) return NO_SUPABASE;
+
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'No autenticado.' };
+  if (user.role !== 'admin') return { success: false, error: 'Sólo el administrador puede gestionar bloqueos.' };
+
+  const { error } = await supabase.from('space_blocks').delete().eq('id', id);
   if (error) return { success: false, error: error.message };
 
   revalidatePath('/dashboard/canchas');

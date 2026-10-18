@@ -159,3 +159,146 @@ export async function createRefereeAction(formData: FormData): Promise<ActionRes
   revalidatePath('/dashboard/usuarios');
   return { success: true };
 }
+
+type AdminAuth = {
+  admin: {
+    createUser: (opts: Record<string, unknown>) => Promise<{
+      data: { user: { id: string } | null };
+      error: { message: string } | null;
+    }>;
+    updateUserById: (
+      id: string,
+      opts: Record<string, unknown>
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    deleteUser: (id: string) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+};
+
+/** Actualiza los datos de un delegado (nombre, correo, contraseña y equipo). */
+export async function updateDelegateAction(formData: FormData): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para editar usuarios.' };
+
+  const id = String(formData.get('id') ?? '').trim();
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+  const teamId = String(formData.get('team_id') ?? '').trim();
+
+  if (!id) return { success: false, error: 'Delegado inválido.' };
+  if (!fullName) return { success: false, error: 'El nombre es requerido.' };
+  if (password && password.length < 6) {
+    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  const profileUpdate: Record<string, unknown> = { full_name: fullName };
+  if (email) profileUpdate.username = email.split('@')[0];
+
+  const { error: profileError } = await adminClient.from('users').update(profileUpdate).eq('id', id);
+  if (profileError) return { success: false, error: profileError.message };
+
+  const auth = adminClient.auth as unknown as AdminAuth;
+  const authUpdate: Record<string, unknown> = { user_metadata: { full_name: fullName } };
+  if (email) authUpdate.email = email;
+  if (password) authUpdate.password = password;
+  const { error: authError } = await auth.admin.updateUserById(id, authUpdate);
+  if (authError) return { success: false, error: authError.message };
+
+  await adminClient.from('teams').update({ delegate_id: null }).eq('delegate_id', id);
+  if (teamId) {
+    const { error: teamError } = await adminClient.from('teams').update({ delegate_id: id }).eq('id', teamId);
+    if (teamError) return { success: false, error: teamError.message };
+  }
+
+  revalidatePath('/dashboard/delegados');
+  revalidatePath('/dashboard/teams');
+  revalidatePath('/dashboard/usuarios');
+  return { success: true };
+}
+
+/** Elimina la cuenta de un delegado (lo desasigna de su equipo primero). */
+export async function deleteDelegateAction(id: string): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+  if (admin.id === id) return { success: false, error: 'No puedes eliminar tu propia cuenta.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para eliminar usuarios.' };
+
+  await adminClient.from('teams').update({ delegate_id: null }).eq('delegate_id', id);
+
+  const { error: profileError } = await adminClient.from('users').delete().eq('id', id);
+  if (profileError) return { success: false, error: profileError.message };
+
+  const auth = adminClient.auth as unknown as AdminAuth;
+  const { error: authError } = await auth.admin.deleteUser(id);
+  if (authError) return { success: false, error: authError.message };
+
+  revalidatePath('/dashboard/delegados');
+  revalidatePath('/dashboard/teams');
+  revalidatePath('/dashboard/usuarios');
+  return { success: true };
+}
+
+/** Actualiza los datos de un árbitro (nombre, correo y contraseña). */
+export async function updateRefereeAction(formData: FormData): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para editar usuarios.' };
+
+  const id = String(formData.get('id') ?? '').trim();
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+
+  if (!id) return { success: false, error: 'Árbitro inválido.' };
+  if (!fullName) return { success: false, error: 'El nombre es requerido.' };
+  if (password && password.length < 6) {
+    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  const profileUpdate: Record<string, unknown> = { full_name: fullName };
+  if (email) profileUpdate.username = email.split('@')[0];
+
+  const { error: profileError } = await adminClient.from('users').update(profileUpdate).eq('id', id);
+  if (profileError) return { success: false, error: profileError.message };
+
+  const auth = adminClient.auth as unknown as AdminAuth;
+  const authUpdate: Record<string, unknown> = { user_metadata: { full_name: fullName } };
+  if (email) authUpdate.email = email;
+  if (password) authUpdate.password = password;
+  const { error: authError } = await auth.admin.updateUserById(id, authUpdate);
+  if (authError) return { success: false, error: authError.message };
+
+  revalidatePath('/dashboard/arbitros');
+  revalidatePath('/dashboard/usuarios');
+  return { success: true };
+}
+
+/** Elimina la cuenta de un árbitro (lo desasigna de sus partidos primero). */
+export async function deleteRefereeAction(id: string): Promise<ActionResponse> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: 'No autorizado.' };
+  if (admin.id === id) return { success: false, error: 'No puedes eliminar tu propia cuenta.' };
+
+  const adminClient = createAdminClient();
+  if (!adminClient) return { success: false, error: 'Falta la service role key para eliminar usuarios.' };
+
+  await adminClient.from('matches').update({ referee_id: null }).eq('referee_id', id);
+
+  const { error: profileError } = await adminClient.from('users').delete().eq('id', id);
+  if (profileError) return { success: false, error: profileError.message };
+
+  const auth = adminClient.auth as unknown as AdminAuth;
+  const { error: authError } = await auth.admin.deleteUser(id);
+  if (authError) return { success: false, error: authError.message };
+
+  revalidatePath('/dashboard/arbitros');
+  revalidatePath('/dashboard/usuarios');
+  return { success: true };
+}

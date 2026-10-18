@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/app/auth/actions';
+import { createClient } from '@/utils/supabase/server';
 import { ROLE_LABEL, isStaffRole } from '@/utils/roles';
 import { DashboardNav, DashboardNavMobile, type DashboardNavGroup } from '@/components/DashboardNav';
 
@@ -70,12 +71,30 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login?message=Acceso restringido a personal autorizado.');
   }
 
+  // Cuenta de pagos pendientes de verificar (para el aviso del menú).
+  let pendingPayments = 0;
+  if (user.role === 'admin') {
+    const supabase = await createClient();
+    if (supabase) {
+      const { count } = await supabase
+        .from('reservations')
+        .select('id', { count: 'exact', head: true })
+        .eq('payment_status', 'submitted');
+      pendingPayments = count ?? 0;
+    }
+  }
+
   // Filtra los accesos según el rol del usuario conectado.
   let groups: DashboardNavGroup[] = NAV_GROUPS.map((g) => ({
     title: g.title,
     items: g.items
       .filter((item) => !item.adminOnly || user.role === 'admin')
-      .map(({ href, label, icon }) => ({ href, label, icon })),
+      .map(({ href, label, icon }) => ({
+        href,
+        label,
+        icon,
+        badge: href === '/dashboard/reservas' && pendingPayments > 0 ? pendingPayments : undefined,
+      })),
   })).filter((g) => g.items.length > 0);
 
   if (user.role === 'delegate') {
